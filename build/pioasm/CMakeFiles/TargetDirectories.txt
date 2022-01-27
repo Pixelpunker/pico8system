@@ -1,3 +1,0 @@
-/home/andreas/pico8system/build/pioasm/CMakeFiles/rebuild_cache.dir
-/home/andreas/pico8system/build/pioasm/CMakeFiles/pioasm.dir
-/home/andreas/pico8system/build/pioasm/CMakeFiles/edit_cache.dir

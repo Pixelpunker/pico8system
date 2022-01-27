@@ -5,7 +5,7 @@ set(PROJECT_NAME pico8system)
 
 # Set your project sources here
 set(PROJECT_SOURCES
-		main.cpp
+		celeste.cpp
 )
 
 # --- Here Be Boilerplate ---
