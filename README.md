@@ -1,16 +1,13 @@
-# PicoSystem Boilerplate
+# PICO-8 Compatibility Layer for the Pimoroni PicoSystem
 
-If you're starting a project in your own GitHub repository, this boilerplate will show you how to set it up.
-
-You should have:
-
-- CMakeLists.txt
-- main.cpp (and/or your sources)
-- pico_sdk_import.cmake - Helper to find the Pico SDK
-- picosystem_sdk_import.cmake  - Helper to find the PicoSystem SDK
+PicoSystem and PICO-8 are strange siblings in name and spirit. They are based on vastly different technologies, one real, one just made up. This compatibility layer tries to bridge the gap.
 
 
-You should also have the Pico SDK and PicoSystem SDK's in directories alongside this one:
+## Credits
+- PicoSystem SDK by Pimoroni - https://github.com/pimoroni/picosystem
+- Picotool by Dan Sanderson - https://github.com/dansanderson/picotool
+- Celeste Classic C source port by https://github.com/lemon32767/ccleste
 
-- PicoSystem SDK - https://github.com/pimoroni/picosystem
-- Pico SDK - https://github.com/raspberrypi/pico-sdk/
+And of course:
+- Original game by Matt Thorson and Noel Berry - https://mattmakesgames.itch.io/celesteclassic
+- PICO-8 by zep - https://www.lexaloffle.com/pico-8.php
