@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/andreas/pico8system/build/CMakeFiles/PioasmBuild"
+		},
+		{
+			"file" : "/home/andreas/pico8system/build/CMakeFiles/PioasmBuild.rule"
+		},
+		{
+			"file" : "/home/andreas/pico8system/build/CMakeFiles/PioasmBuild-complete.rule"
+		},
+		{
+			"file" : "/home/andreas/pico8system/build/pioasm/src/PioasmBuild-stamp/PioasmBuild-install.rule"
+		},
+		{
+			"file" : "/home/andreas/pico8system/build/pioasm/src/PioasmBuild-stamp/PioasmBuild-mkdir.rule"
+		},
+		{
+			"file" : "/home/andreas/pico8system/build/pioasm/src/PioasmBuild-stamp/PioasmBuild-download.rule"
+		},
+		{
+			"file" : "/home/andreas/pico8system/build/pioasm/src/PioasmBuild-stamp/PioasmBuild-update.rule"
+		},
+		{
+			"file" : "/home/andreas/pico8system/build/pioasm/src/PioasmBuild-stamp/PioasmBuild-patch.rule"
+		},
+		{
+			"file" : "/home/andreas/pico8system/build/pioasm/src/PioasmBuild-stamp/PioasmBuild-configure.rule"
+		},
+		{
+			"file" : "/home/andreas/pico8system/build/pioasm/src/PioasmBuild-stamp/PioasmBuild-build.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"PioasmBuild"
+		],
+		"name" : "PioasmBuild"
+	}
+}

@@ -1,0 +1,13 @@
+# Target labels
+ PioasmBuild
+# Source files and their labels
+/home/andreas/pico8system/build/CMakeFiles/PioasmBuild
+/home/andreas/pico8system/build/CMakeFiles/PioasmBuild.rule
+/home/andreas/pico8system/build/CMakeFiles/PioasmBuild-complete.rule
+/home/andreas/pico8system/build/pioasm/src/PioasmBuild-stamp/PioasmBuild-install.rule
+/home/andreas/pico8system/build/pioasm/src/PioasmBuild-stamp/PioasmBuild-mkdir.rule
+/home/andreas/pico8system/build/pioasm/src/PioasmBuild-stamp/PioasmBuild-download.rule
+/home/andreas/pico8system/build/pioasm/src/PioasmBuild-stamp/PioasmBuild-update.rule
+/home/andreas/pico8system/build/pioasm/src/PioasmBuild-stamp/PioasmBuild-patch.rule
+/home/andreas/pico8system/build/pioasm/src/PioasmBuild-stamp/PioasmBuild-configure.rule
+/home/andreas/pico8system/build/pioasm/src/PioasmBuild-stamp/PioasmBuild-build.rule
