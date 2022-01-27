@@ -12,44 +12,48 @@ using namespace picomath;
 // todo make a static class to hide some stuff from users of pico8 api and omit init method
 namespace pico8
 {
+  color_t rgb2(uint16_t r, uint16_t g, uint16_t b, uint16_t a = 0xFF) { // PicoSystem only accepts 4 bit color values (0-15)
+    return rgb(r/16, g/16, b/16, a/16);
+  }
+
   pair<uint32_t, uint32_t> systemoffset(-4, -4); // which part of 128x128 is visible in 120x120 picosystem screen
   // tip: adjust systemoffset during gameplay
   pair<uint32_t, uint32_t> hudoffset(-4, 0); // while moving the systemoffset, HUD elements probably want to stay in place
   array<color_t, (uint32_t)16> system_palette = {
-      rgb(0, 0, 0),         // 0 	black (also transparent by default for sprites)
-      rgb(29, 43, 83),      // 1 	dark-blue
-      rgb(126, 37, 83),     // 2 	dark-purple
-      rgb(0, 135, 81),      // 3 	dark-green
-      rgb(171, 82, 54),     // 4 	brown
-      rgb(95, 87, 79),      // 5 	dark-grey
-      rgb(194, 195, 199),   // 6 	light-grey
-      rgb(255, 241, 232),   // 7 	white
-      rgb(255, 0, 77),      // 8 	red
-      rgb(255, 163, 0),     // 9	orange
-      rgb(255, 236, 39),    // 10	yellow
-      rgb(0, 228, 54),      // 11 green
-      rgb(41, 173, 255),    // 12 	blue
-      rgb(131, 118, 156),   // 13 	lavender
-      rgb(255, 119, 168),   // 14 	pink
-      rgb(255, 204, 170, 1) // 15 	light-peach
+      rgb2(0, 0, 0),         // 0 	black (also transparent by default for sprites)
+      rgb2(29, 43, 83),      // 1 	dark-blue
+      rgb2(126, 37, 83),     // 2 	dark-purple
+      rgb2(0, 135, 81),      // 3 	dark-green
+      rgb2(171, 82, 54),     // 4 	brown
+      rgb2(95, 87, 79),      // 5 	dark-grey
+      rgb2(194, 195, 199),   // 6 	light-grey
+      rgb2(255, 241, 232),   // 7 	white
+      rgb2(255, 0, 77),      // 8 	red
+      rgb2(255, 163, 0),     // 9	orange
+      rgb2(255, 236, 39),    // 10	yellow
+      rgb2(0, 228, 54),      // 11 green
+      rgb2(41, 173, 255),    // 12 	blue
+      rgb2(131, 118, 156),   // 13 	lavender
+      rgb2(255, 119, 168),   // 14 	pink
+      rgb2(255, 204, 170, 1) // 15 	light-peach
   };
   array<color_t, (uint32_t)16> secret_palette = {
-      rgb(41, 24, 20),    // 128 	brownish-black
-      rgb(17, 29, 53),    // 129 	darker-blue
-      rgb(66, 33, 54),    // 130 	darker-purple
-      rgb(18, 83, 89),    // 131 	blue-green
-      rgb(116, 47, 41),   // 132 	dark-brown
-      rgb(73, 51, 59),    // 133 	darker-grey
-      rgb(162, 136, 121), // 134 	medium-grey
-      rgb(243, 239, 125), // 135 	light-yellow
-      rgb(190, 18, 80),   // 136 	dark-red
-      rgb(255, 108, 36),  // 137 	dark-orange
-      rgb(168, 231, 46),  // 138 	lime-green
-      rgb(0, 181, 67),    // 139 	medium-green
-      rgb(6, 90, 181),    // 140	true-blue
-      rgb(117, 70, 101),  // 141 	mauve
-      rgb(255, 110, 89),  // 142 	dark-peach
-      rgb(255, 157, 129), // 143 	peach
+      rgb2(41, 24, 20),    // 128 	brownish-black
+      rgb2(17, 29, 53),    // 129 	darker-blue
+      rgb2(66, 33, 54),    // 130 	darker-purple
+      rgb2(18, 83, 89),    // 131 	blue-green
+      rgb2(116, 47, 41),   // 132 	dark-brown
+      rgb2(73, 51, 59),    // 133 	darker-grey
+      rgb2(162, 136, 121), // 134 	medium-grey
+      rgb2(243, 239, 125), // 135 	light-yellow
+      rgb2(190, 18, 80),   // 136 	dark-red
+      rgb2(255, 108, 36),  // 137 	dark-orange
+      rgb2(168, 231, 46),  // 138 	lime-green
+      rgb2(0, 181, 67),    // 139 	medium-green
+      rgb2(6, 90, 181),    // 140	true-blue
+      rgb2(117, 70, 101),  // 141 	mauve
+      rgb2(255, 110, 89),  // 142 	dark-peach
+      rgb2(255, 157, 129), // 143 	peach
   };
   array<color_t, (uint32_t)16> draw_palette;
   array<color_t, (uint32_t)16> secondary_palette;
@@ -62,7 +66,7 @@ namespace pico8
     return _pen;
   }
 
-  void cls(uint32_t color = 0)
+ void cls(uint32_t color = 0)
   {
     auto lastpencolor = getCurrentPencolor();
     pen(draw_palette[color]);
@@ -189,14 +193,15 @@ namespace pico8
 
   number fget(number n)
   {
-    return (number)fget((int)n);
+    return fget((int)n);
   }
 
   bool fget(uint32_t n, uint32_t f)
   {
-    auto spriteflag = sprite_flags[n];
-    spriteflag = spriteflag >> f;
-    return (bool)(spriteflag | 0x01);
+    return n < sizeof(sprite_flags) / sizeof(*sprite_flags) && (sprite_flags[n] & (1 << f)) != 0;
+    // auto spriteflag = sprite_flags[n];
+    // spriteflag = spriteflag >> f;
+    // return (bool)(spriteflag | 0x01);
   }
 
   bool fget(number n, number f)
@@ -239,7 +244,8 @@ namespace pico8
         auto tileindex = tilemap_data[x + y * 128];
         // if (layers == 0 || sprite_flags[tileindex] == 4 || gettileflag(tileindex, layers != 4 ? layers-1 : layers))
         auto masked = sprite_flags[tileindex] | layers;
-        if (layers == 0 || masked == sprite_flags[tileindex])
+        if (layers == 0 || (layers == 4 && sprite_flags[tileindex] == 4) || fget(tileindex, layers != 4 ? layers-1 : layers))
+        // if (layers == 0 || masked == sprite_flags[tileindex])
         {
           sprite(tileindex, sx + x * 8 - cell_x * 8 + offset.first, sy + y * 8 - cell_y * 8 + offset.second);
         }
