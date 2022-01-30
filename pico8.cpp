@@ -61,11 +61,6 @@ namespace pico8
   color_t _fdp[128 * 128] __attribute__ ((aligned (4))) = { };
   static buffer_t *PICO8SCREEN = buffer(128, 128, _fdp);
 
-  typedef struct  {
-    uint_fast16_t x,y;
-  } point;
-  
-  point screenoffset = { .x=4, .y=4};
 
   // rnd() // clever me uses the current battery voltage as a random seed.
 

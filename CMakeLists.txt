@@ -43,4 +43,4 @@ disable_startup_logo(${PROJECT_NAME})  # Skip the PicoSystem splash
 #no_font(${PROJECT_NAME})              # Omit the default font
 no_spritesheet(${PROJECT_NAME})        # Omit the default spritesheet
 #no_overclock(${PROJECT_NAME})         # Don't overclock
-fps30_mode(${PROJECT_NAME})            # For running PICO-8 ports at original speed
+#fps30_mode(${PROJECT_NAME})            # For running PICO-8 ports at original speed

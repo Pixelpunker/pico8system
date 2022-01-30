@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
+#include <array>
 #include "pico8.cpp"
 #include "celeste.hpp"
 using namespace picosystem;
@@ -42,6 +43,40 @@ static bool tile_flag_at(int x,int y,int w,int h,int flag);
 static int tile_at(int x,int y);
 static bool spikes_at(number x,number y,int w,int h,number xspd,number yspd);
 
+std::array<std::array<int, 2>, 32> leveloffsets {
+		std::array<int, 2> {4, 4}, // 0
+		std::array<int, 2> {4, 4}, // 1
+		std::array<int, 2> {4, 4}, // 2
+		std::array<int, 2> {8, 4}, // 3 // move flower 1 to right
+		std::array<int, 2> {4, 4}, // 4
+		std::array<int, 2> {4, 4}, // 5
+		std::array<int, 2> {4, 4}, // 6
+		std::array<int, 2> {4, 4}, // 7
+		std::array<int, 2> {4, 4}, // 8
+		std::array<int, 2> {4, 4}, // 9
+		std::array<int, 2> {4, 4}, // 10
+		std::array<int, 2> {4, 4}, // 11
+		std::array<int, 2> {4, 4}, // 12
+		std::array<int, 2> {4, 4}, // 13
+		std::array<int, 2> {4, 4}, // 14
+		std::array<int, 2> {4, 4}, // 15
+		std::array<int, 2> {4, 4}, // 16
+		std::array<int, 2> {4, 4}, // 17
+		std::array<int, 2> {4, 4}, // 18
+		std::array<int, 2> {4, 4}, // 19
+		std::array<int, 2> {4, 4}, // 20
+		std::array<int, 2> {4, 4}, // 21
+		std::array<int, 2> {4, 4}, // 22
+		std::array<int, 2> {4, 4}, // 23
+		std::array<int, 2> {4, 4}, // 24
+		std::array<int, 2> {4, 4}, // 25
+		std::array<int, 2> {4, 4}, // 26
+		std::array<int, 2> {4, 4}, // 27
+		std::array<int, 2> {4, 4}, // 28
+		std::array<int, 2> {4, 4}, // 29
+		std::array<int, 2> {4, 4}, // 30
+		std::array<int, 2> {4, 4} // 31 (Title screen)
+};
 
 //exported /imported functions
 static Celeste_P8_cb_func_t Celeste_P8_call = NULL;
@@ -1840,7 +1875,8 @@ void draw(uint32_t tick) {
 	blend(MASK);
   target(pico8::PICO8SCREEN);
 	Celeste_P8_draw();
+	pico8::print(to_string(level_index()), 100, 4, 8); // DEBUG
 	target();
 	blend(COPY);
-	blit(pico8::PICO8SCREEN, 4, 4, 120, 120, 0, 0);
+	blit(pico8::PICO8SCREEN, leveloffsets[level_index()][0], leveloffsets[level_index()][1], 120, 120, 0, 0);
 }

@@ -10,9 +10,10 @@
 * Sometimes crashes when falling
 * Too fast
 * Load second half of map
+* Screen shake issues -- noch mehr Space? *
 
 ## Features
-* Combine cameras
+* ~~Combine cameras~~
 * 30 FPS mode
 * Load gfx
 * Load sfx
