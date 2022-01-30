@@ -1,5 +1,5 @@
 from picotool import *
-filename = "map_data.hpp"
+filename = "assets.hpp"
 with open("assets/celeste.p8", 'rb') as fh:
   data = get_raw_data_from_p8_file(fh, filename="celeste.p8")
 # print(data.section_lines['gfx'][1])
