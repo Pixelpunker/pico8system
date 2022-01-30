@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
-
 #include "pico8.cpp"
 #include "celeste.hpp"
 using namespace picosystem;
@@ -220,7 +219,7 @@ static PARTICLE dead_particles[8];
 static void PRELUDE_initparticles() {
 	for (int i=0; i<=24; i++) {
 		particles[i] = (PARTICLE){
-			.active=false,
+			.active=true,
 			.x=rnd(128),
 			.y=rnd(128),
 			.s=0+P8flr(rnd(5)/4),
@@ -1193,7 +1192,7 @@ static void BIG_CHEST_draw(OBJ* this) {
 		flash_bg=true;
 		if (this->timer<=45 && this->particle_count<50) {
 			this->particles[this->particle_count++] = (PARTICLE){
-				.active=false,
+				.active=true,
 				.x=1+rnd(14),
 				.y=0,
 				.s=0,
@@ -1679,11 +1678,11 @@ void Celeste_P8_draw() {
 	pico8::rectfill(-5,128,133,133,0);
 	pico8::rectfill(128,-5,133,133,0);
    
-	// credits
+// credits
 	if (is_title()) {
-		pico8::print("x+c",58,80,5);
-		pico8::print("matt thorson",42,96,5);
-		pico8::print("noel berry",46,102,5);
+		pico8::print("a+b",58-5,80,5);
+		pico8::print("matt thorson",42-5,96,5);
+		pico8::print("noel berry",46-5,102+2,5);
 	}
    
 	if (level_index()==30) {
@@ -1838,5 +1837,10 @@ void update(uint32_t tick) {
 }
 
 void draw(uint32_t tick) {
+	blend(MASK);
+  target(pico8::PICO8SCREEN);
 	Celeste_P8_draw();
+	target();
+	blend(COPY);
+	blit(pico8::PICO8SCREEN, 4, 4, 120, 120, 0, 0);
 }

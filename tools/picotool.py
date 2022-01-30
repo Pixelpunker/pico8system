@@ -320,15 +320,13 @@ def from_lines(lines, version):
         version: The PICO-8 data version from the game file header.
     """
     formattedlines = []
-    elementcount = 0
     for i in range(len(lines)):
         line = lines[i]
         myarray = bytearray.fromhex(str(line.rstrip(), encoding='ascii'))
-        elementcount += len(myarray)
         substring = ", ".join(("0x{0:02X}".format(element)) for element in myarray)
         if i < len(lines) - 1:
             substring = "\t" + substring + ",\n"
         else:
             substring = "\t" + substring
         formattedlines.append(substring)
-    return "#include <array>\nusing namespace std;\n\narray<uint_least8_t, {0}> map_data =\n{{\n".format(elementcount)+("".join(formattedlines))+"\n};"
+    return "#include <array>\nusing namespace std;\n\narray<uint_least8_t, 16384> map_data =\n{\n"+("".join(formattedlines))+"\n};"

@@ -2,7 +2,8 @@
 #include "picomath.cpp"
 #include <optional>
 #include <array>
-#include "resources/data.h"
+#include "assets/data.h"
+#include "assets/assets.hpp"
 using namespace std;
 using namespace picosystem;
 using namespace picomath;
@@ -16,9 +17,7 @@ namespace pico8
     return rgb(r/16, g/16, b/16, a/16);
   }
 
-  pair<uint32_t, uint32_t> systemoffset(-4, -4); // which part of 128x128 is visible in 120x120 picosystem screen
   // tip: adjust systemoffset during gameplay
-  pair<uint32_t, uint32_t> hudoffset(-4, 0); // while moving the systemoffset, HUD elements probably want to stay in place
   array<color_t, (uint32_t)16> system_palette = {
       rgb2(0, 0, 0),         // 0 	black (also transparent by default for sprites)
       rgb2(29, 43, 83),      // 1 	dark-blue
@@ -59,6 +58,15 @@ namespace pico8
   array<color_t, (uint32_t)16> secondary_palette;
   bool swapped_buttons = false;
 
+  color_t _fdp[128 * 128] __attribute__ ((aligned (4))) = { };
+  static buffer_t *PICO8SCREEN = buffer(128, 128, _fdp);
+
+  typedef struct  {
+    uint_fast16_t x,y;
+  } point;
+  
+  point screenoffset = { .x=4, .y=4};
+
   // rnd() // clever me uses the current battery voltage as a random seed.
 
   color_t getCurrentPencolor()
@@ -80,7 +88,7 @@ namespace pico8
   }
 
   // spr implementation. no swapped palettes supported yet.
-  void spr(int32_t spriteindex, int32_t x, int32_t y, int32_t cols, int32_t rows, bool flipx, bool flipy, bool hud = false)
+  void spr(int32_t spriteindex, int32_t x, int32_t y, int32_t cols, int32_t rows, bool flipx, bool flipy)
   {
     blend(MASK);
     int32_t flags = 0;
@@ -100,13 +108,13 @@ namespace pico8
     {
       flags = 3;
     }
-    auto offset = hud ? hudoffset : systemoffset;
-    sprite(spriteindex, x + offset.first, y + offset.second, cols, rows, 8 * cols, 8 * rows, flags);
+    
+    sprite(spriteindex, x, y, cols, rows, 8 * cols, 8 * rows, flags);
   }
 
-  void spr(number spriteindex, number x, number y, number cols, number rows, bool flipx, bool flipy, bool hud = false)
+  void spr(number spriteindex, number x, number y, number cols, number rows, bool flipx, bool flipy)
   {
-    spr((int)spriteindex, (int)x, (int)y, (int)cols, (int)rows, flipx, flipy, hud);
+    spr((int)spriteindex, (int)x, (int)y, (int)cols, (int)rows, flipx, flipy);
   }
 
   // reset palette
@@ -144,18 +152,18 @@ namespace pico8
     pal((int)c0, (int)c1, (int)p);
   }
 
-  void rectfill(int32_t x, int32_t y, int32_t x2, int32_t y2, int32_t c, bool hud = false)
+  void rectfill(int32_t x, int32_t y, int32_t x2, int32_t y2, int32_t c)
   {
-    auto offset = hud ? hudoffset : systemoffset;
+    
     auto lastpencolor = getCurrentPencolor();
     pen(draw_palette[c]);
-    frect(x + offset.first, y + offset.second, x2 - x, y2 - y);
+    frect(x, y, x2 - x, y2 - y);
     pen(lastpencolor);
   }
 
-  void rectfill(number x, number y, number x2, number y2, number c, bool hud = false)
+  void rectfill(number x, number y, number x2, number y2, number c)
   {
-    rectfill((int)x, (int)y, (int)x2, (int)y2, (int)c, hud);
+    rectfill((int)x, (int)y, (int)x2, (int)y2, (int)c);
   }
 
   static int gettileflag(int tile, int flag)
@@ -233,34 +241,34 @@ namespace pico8
     fset(n, f, val);
   }
 
-  void map(uint32_t cell_x = 0, uint32_t cell_y = 0, int32_t sx = 0, int32_t sy = 0, uint32_t cell_w = 128, uint32_t cell_h = 32, uint32_t layers = 0, bool hud = false)
+  void map(uint32_t cell_x = 0, uint32_t cell_y = 0, int32_t sx = 0, int32_t sy = 0, uint32_t cell_w = 128, uint32_t cell_h = 32, uint32_t layers = 0)
   {
     blend(MASK);
-    auto offset = hud ? hudoffset : systemoffset;
+    
     for (auto x = cell_x; x < cell_w + cell_x; x++)
     {
       for (auto y = cell_y; y < cell_h + cell_y; y++)
       {
-        auto tileindex = tilemap_data[x + y * 128];
+        auto tileindex = map_data[x + y * 128];
         // if (layers == 0 || sprite_flags[tileindex] == 4 || gettileflag(tileindex, layers != 4 ? layers-1 : layers))
         auto masked = sprite_flags[tileindex] | layers;
-        if (layers == 0 || (layers == 4 && sprite_flags[tileindex] == 4) || fget(tileindex, layers != 4 ? layers-1 : layers))
-        // if (layers == 0 || masked == sprite_flags[tileindex])
+        // if (layers == 0 || (layers == 4 && sprite_flags[tileindex] == 4) || fget(tileindex, layers != 4 ? layers-1 : layers))
+        if (layers == 0 || masked == sprite_flags[tileindex])
         {
-          sprite(tileindex, sx + x * 8 - cell_x * 8 + offset.first, sy + y * 8 - cell_y * 8 + offset.second);
+          sprite(tileindex, sx + (x * 8 - cell_x * 8), sy + (y * 8 - cell_y * 8));
         }
       }
     }
   }
 
-  void map(number cell_x = 0, number cell_y = 0, number sx = 0, number sy = 0, number cell_w = 128, number cell_h = 32, number layers = 0, bool hud = false)
+  void map(number cell_x = 0, number cell_y = 0, number sx = 0, number sy = 0, number cell_w = 128, number cell_h = 32, number layers = 0)
   {
-    map((int)cell_x, (int)cell_y, (int)sx, (int)sy, (int)cell_w, (int)cell_h, (int)layers, hud);
+    map((int)cell_x, (int)cell_y, (int)sx, (int)sy, (int)cell_w, (int)cell_h, (int)layers);
   }
 
   int32_t mget(uint32_t celx, uint32_t cely)
   {
-    return tilemap_data[celx + cely * 128];
+    return map_data[celx + cely * 128];
   }
 
   number mget(number celx, number cely)
@@ -285,26 +293,26 @@ namespace pico8
   }
 
   pair<int32_t, int32_t> lastline(0, 0); // PRIVATE
-  void line(int32_t x0, int32_t y0, optional<int32_t> x1, optional<int32_t> y1, optional<int32_t> c, bool hud = false)
+  void line(int32_t x0, int32_t y0, optional<int32_t> x1, optional<int32_t> y1, optional<int32_t> c)
   {
-    auto offset = hud ? hudoffset : systemoffset;
+    
     auto color = getCurrentPencolor();
     int32_t startx, starty, endx, endy;
     if (x1.has_value())
     {
-      startx = x0 + offset.first;
-      starty = y0 + offset.second;
-      endx = x1.value() + offset.first;
-      endy = y1.value() + offset.second;
+      startx = x0;
+      starty = y0;
+      endx = x1.value();
+      endy = y1.value();
       lastline.first = x1.value();
       lastline.second = y1.value();
     }
     else
     {
-      startx = lastline.first + offset.first;
-      starty = lastline.second + offset.second;
-      endx = x0 + offset.first;
-      endy = y0 + offset.second;
+      startx = lastline.first;
+      starty = lastline.second;
+      endx = x0;
+      endy = y0;
       lastline.first = x0;
       lastline.second = y0;
     }
@@ -327,68 +335,68 @@ namespace pico8
     pen(color); // restore previous pen color
   }
 
-  void line(number x0, number y0, optional<number> x1, optional<number> y1, optional<number> c, bool hud = false)
+  void line(number x0, number y0, optional<number> x1, optional<number> y1, optional<number> c)
   {
-    line((int)x0, (int)y0, (optional<number>)x1, (optional<number>)y1, (optional<number>)c, hud);
+    line((int)x0, (int)y0, (optional<number>)x1, (optional<number>)y1, (optional<number>)c);
   }
 
-  static void circ(int32_t x, int32_t y, uint32_t r, optional<uint32_t> c, bool hud = false)
+  static void circ(int32_t x, int32_t y, uint32_t r, optional<uint32_t> c)
   {
     auto color = getCurrentPencolor();
-    auto offset = hud ? hudoffset : systemoffset;
+    
     if (c.has_value())
     {
       pen(draw_palette[c.value()]);
     }
-    circle(x + offset.first, y + offset.second, r);
+    circle(x, y, r);
     pen(color); // restore previous pen color
   }
 
-  static void circ(number x, number y, number r, optional<number> c, bool hud = false)
+  static void circ(number x, number y, number r, optional<number> c)
   {
-    circ((int)x, (int)y, (int)r, (optional<int>)c, hud);
+    circ((int)x, (int)y, (int)r, (optional<int>)c);
   }
 
-  static void circfill(int32_t x, int32_t y, uint32_t r, optional<uint32_t> c, bool hud = false)
+  static void circfill(int32_t x, int32_t y, uint32_t r, optional<uint32_t> c)
   {
     auto color = getCurrentPencolor();
-    auto offset = hud ? hudoffset : systemoffset;
+    
     if (c.has_value())
     {
       pen(draw_palette[c.value()]);
     }
-    fcircle(x + offset.first, y + offset.second, r);
+    fcircle(x, y, r);
     pen(color); // restore previous pen color
   }
 
-  static void circfill(number x, number y, number r, optional<number> c, bool hud = false)
+  static void circfill(number x, number y, number r, optional<number> c)
   {
-    circfill((int)x, (int)y, (int)r, (optional<int>)c, hud);
+    circfill((int)x, (int)y, (int)r, (optional<int>)c);
   }
 
   // no support for the P8SCII special control codes planned
-  static void print(string str, int32_t x, int32_t y, optional<uint32_t> c, bool hud = false)
+  static void print(string str, int32_t x, int32_t y, optional<uint32_t> c)
   {
     auto color = getCurrentPencolor();
-    auto offset = hud ? hudoffset : systemoffset;
+    
     if (c.has_value())
     {
       pen(draw_palette[c.value()]);
     }
-    text(str, x + offset.first, y + offset.second);
+    text(str, x, y);
     pen(color); // restore previous pen color
   }
 
-  static void print(string str, number x, number y, optional<number> c, bool hud = false)
+  static void print(string str, number x, number y, optional<number> c)
   {
-    print(str, (int)x, (int)y, (optional<int>)c, hud);
+    print(str, (int)x, (int)y, (optional<int>)c);
   }
 
   // no support for the P8SCII special control codes planned
-  static void print(string str, optional<uint32_t> c, bool hud = false)
+  static void print(string str, optional<uint32_t> c)
   {
     auto color = getCurrentPencolor();
-    auto offset = hud ? hudoffset : systemoffset;
+    
     if (c.has_value())
     {
       pen(draw_palette[c.value()]);
@@ -510,11 +518,21 @@ namespace pico8
   {
   }
 
+  void hudDrawing(bool active) { // inversly adjust the camera for drawing hud elements so they stay in the
+                                 // same place while moving the viewport
+  }
+
+
   void init(bool swapped_buttons = false)
   {
     swapped_buttons = swapped_buttons;
     // set drawing region to 128x128 (visible only 120x120 controlled by system_offset and hud_offset)
     clip(0, 0, 128, 128);
+    
+
+    
+    target(PICO8SCREEN);
+
     blend(MASK);
     // load spritesheet
     spritesheet(buffer(128, 64, spritedata));
