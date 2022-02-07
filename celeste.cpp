@@ -17,6 +17,79 @@ using namespace picomath;
 #include <cstdint>
 #include <climits>
 
+
+// *************************
+// * PICO8SYSTEM ADDITIONS *
+// *************************
+	std::array<std::array<int, 3>, 32> leveloffsets {
+		std::array<int, 3> {5, 4, 0}, // 0
+		std::array<int, 3> {5, 4, 0}, // 1
+		std::array<int, 3> {5, 4, 0}, // 2
+		std::array<int, 3> {5, 4, 1}, // 3
+		std::array<int, 3> {5, 4, 1}, // 4
+		std::array<int, 3> {5, 4, 0}, // 5
+		std::array<int, 3> {5, 4, 0}, // 6
+		std::array<int, 3> {5, 4, 0}, // 7
+		std::array<int, 3> {5, 4, 0}, // 8
+		std::array<int, 3> {5, 4, 0}, // 9
+		std::array<int, 3> {5, 6, 0}, // 10
+		std::array<int, 3> {5, 4, 0}, // 11
+		std::array<int, 3> {5, 4, 0}, // 12
+		std::array<int, 3> {5, 4, 0}, // 13
+		std::array<int, 3> {5, 4, 0}, // 14
+		std::array<int, 3> {5, 4, 1}, // 15
+		std::array<int, 3> {5, 4, 0}, // 16
+		std::array<int, 3> {5, 4, 0}, // 17
+		std::array<int, 3> {5, 4, 0}, // 18
+		std::array<int, 3> {5, 4, 1}, // 19
+		std::array<int, 3> {5, 4, 1}, // 20
+		std::array<int, 3> {5, 4, 0}, // 21
+		std::array<int, 3> {5, 4, 0}, // 22
+		std::array<int, 3> {5, 4, 0}, // 23
+		std::array<int, 3> {5, 2, 0}, // 24
+		std::array<int, 3> {5, 4, 1}, // 25
+		std::array<int, 3> {5, 4, 1}, // 26
+		std::array<int, 3> {5, 6, 0}, // 27
+		std::array<int, 3> {5, 4, 0}, // 28
+		std::array<int, 3> {5, 6, 0}, // 29
+		std::array<int, 3> {5, 8, 1}, // 30
+		std::array<int, 3> {5, 4, 0} // 31 (Title screen)
+};
+
+number playerx;
+
+typedef enum {
+  neutral  = 0,
+  left = 1,
+  right    = 2
+} direction;
+
+static struct {
+	int x0, x1, target1, target2, target3;
+	direction findDirection(number playerx) {
+		auto framedelay = 0;
+		auto direction = neutral;
+		this->x0 = 0;
+		this->x1 = (int)playerx;
+		if (this->x1 > this->x0 + framedelay) { direction = right; }
+		if (this->x1 < this->x0 - framedelay) { direction = left; }
+		if (this->x0 == this->x1) { direction = neutral; }
+		return direction;
+	};
+	int findTarget(number playerx) {
+		auto target = 0;
+		if (playerx >=0 and playerx < 42) { target = this->target1; }
+		if (playerx >=42 and playerx < 86) { target = this->target2; }
+		if (playerx >= 86) { target = this->target3; }
+		return target;
+	};
+	} movetarget = {.x0=0,.x1=0,.target1=0,.target2=5,.target3=9}; 
+
+
+// *****************
+// * END ADDITIONS *
+// *****************
+
 #define this xthis //this is a keyword in C++
 
 //i cant be bothered to put all function declarations in an appropiate place so ill just toss them all here:
@@ -42,41 +115,6 @@ static bool ice_at(int x,int y,int w,int h);
 static bool tile_flag_at(int x,int y,int w,int h,int flag);
 static int tile_at(int x,int y);
 static bool spikes_at(number x,number y,int w,int h,number xspd,number yspd);
-
-std::array<std::array<int, 2>, 32> leveloffsets {
-		std::array<int, 2> {4, 4}, // 0
-		std::array<int, 2> {4, 4}, // 1
-		std::array<int, 2> {4, 4}, // 2
-		std::array<int, 2> {8, 4}, // 3 // move flower 1 to right
-		std::array<int, 2> {4, 4}, // 4
-		std::array<int, 2> {4, 4}, // 5
-		std::array<int, 2> {4, 4}, // 6
-		std::array<int, 2> {4, 4}, // 7
-		std::array<int, 2> {4, 4}, // 8
-		std::array<int, 2> {4, 4}, // 9
-		std::array<int, 2> {4, 4}, // 10
-		std::array<int, 2> {4, 4}, // 11
-		std::array<int, 2> {4, 4}, // 12
-		std::array<int, 2> {4, 4}, // 13
-		std::array<int, 2> {4, 4}, // 14
-		std::array<int, 2> {4, 4}, // 15
-		std::array<int, 2> {4, 4}, // 16
-		std::array<int, 2> {4, 4}, // 17
-		std::array<int, 2> {4, 4}, // 18
-		std::array<int, 2> {4, 4}, // 19
-		std::array<int, 2> {4, 4}, // 20
-		std::array<int, 2> {4, 4}, // 21
-		std::array<int, 2> {4, 4}, // 22
-		std::array<int, 2> {4, 4}, // 23
-		std::array<int, 2> {4, 4}, // 24
-		std::array<int, 2> {4, 4}, // 25
-		std::array<int, 2> {4, 4}, // 26
-		std::array<int, 2> {4, 4}, // 27
-		std::array<int, 2> {4, 4}, // 28
-		std::array<int, 2> {4, 4}, // 29
-		std::array<int, 2> {4, 4}, // 30
-		std::array<int, 2> {4, 4} // 31 (Title screen)
-};
 
 //exported /imported functions
 static Celeste_P8_cb_func_t Celeste_P8_call = NULL;
@@ -715,7 +753,7 @@ static void PLAYER_draw(OBJ* this) {
 		this->x=clamp(this->x,-1,121);
 		this->spd.x=0;
 	}
-   
+  playerx = this->x; // save current player position for Celeste additions; 
 	set_hair_color(this->djump);
 	draw_hair(this,this->flip_x ? -1 : 1);
 	pico8::spr(this->spr,this->x,this->y,1,1,this->flip_x,this->flip_y);
@@ -1502,6 +1540,10 @@ static void load_room(int x, int y) {
 	if (!is_title()) {
 		init_object(OBJ_ROOM_TITLE,0,0);
 	}
+
+	// ADDITION
+	movetarget.target1 = leveloffsets[level_index()][0];
+	// END ADDITION
 }
 
 // update function //
@@ -1530,7 +1572,7 @@ void Celeste_P8_update() {
 	// cancel if (freeze
 	if (freeze>0) { freeze-=1; return; }
 
-	// screenshake
+// screenshake
 	if (shake>0) {
 		shake-=1;
 		pico8::camera(0,0);
@@ -1860,7 +1902,38 @@ void Celeste_P8_load_state(const void* st_) {
 
 #undef LISTGVARS
 
-// picosystem starts here
+#undef this
+
+// *************************
+// * PICO8SYSTEM ADDITIONS *
+// *************************
+
+static struct {
+	int x, state, target;
+	void update() {
+	if (this->target > this->x) {
+		this->x +=1;
+	}
+	if (this->target > this->x + 4) {
+		this->x +=1;
+	}
+	if (this->target < this->x) {
+		this->x -=1;
+	}
+	if (this->target < this->x - 4) {
+		this->x -=1;
+	}
+	};
+} cam = {
+	.x=5,
+	.state=neutral,
+	.target=5
+};
+
+int secondaryCamera(int levelindex) {
+ auto currentoffsets = leveloffsets[levelindex];
+}
+
 void init() {
 	pico8::init(true);
 
@@ -1869,6 +1942,11 @@ void init() {
 
 void update(uint32_t tick) {
 	Celeste_P8_update();
+	auto direction = movetarget.findDirection(playerx);
+	if (direction == left) { movetarget.target1 = 0; }
+	auto target = movetarget.findTarget(playerx);
+	cam.x = target;
+	cam.update();
 }
 
 void draw(uint32_t tick) {
@@ -1878,5 +1956,5 @@ void draw(uint32_t tick) {
 	pico8::print(to_string(level_index()), 100, 4, 8); // DEBUG
 	target();
 	blend(COPY);
-	blit(pico8::PICO8SCREEN, leveloffsets[level_index()][0], leveloffsets[level_index()][1], 120, 120, 0, 0);
+	blit(pico8::PICO8SCREEN, cam.x, leveloffsets[level_index()][1], 120, 120, 0, 0);
 }

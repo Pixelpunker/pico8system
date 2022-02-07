@@ -61,7 +61,7 @@ namespace pico8
   color_t _fdp[128 * 128] __attribute__ ((aligned (4))) = { };
   static buffer_t *PICO8SCREEN = buffer(128, 128, _fdp);
 
-
+  
   // rnd() // clever me uses the current battery voltage as a random seed.
 
   color_t getCurrentPencolor()
@@ -73,6 +73,9 @@ namespace pico8
   {
     auto lastpencolor = getCurrentPencolor();
     pen(draw_palette[color]);
+  	target();
+    clear();
+    target(pico8::PICO8SCREEN);
     clear();
     pen(lastpencolor);
   }
