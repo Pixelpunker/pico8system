@@ -193,6 +193,7 @@ SECTION_DELIM_RE = re.compile(br'__(\w+)__\n')
 UNICODE_TO_P8SCII = dict((c.p8string, c.p8scii) for c in P8SCII_CHARSET)
 UNICODE_CHAR_WIDTHS = dict((k[0], len(k)) for k in UNICODE_TO_P8SCII.keys())
 
+
 class Error(Exception):
     """A base class for all errors in the picotool libraries."""
     pass
@@ -202,11 +203,14 @@ class InvalidP8DataError(Error):
     """A base class for all invalid game file errors."""
     pass
 
+
 class InvalidP8HeaderError(InvalidP8DataError):
     """Exception for invalid .p8 file header."""
 
     def __str__(self):
         return 'Invalid .p8: missing or corrupt header'
+
+
 def unicode_to_p8scii(s):
     """Convert a Unicode string to P8SCII.
 
@@ -223,6 +227,7 @@ def unicode_to_p8scii(s):
         result.append(UNICODE_TO_P8SCII[s[idx:idx+char_width]])
         idx += char_width
     return bytes(result)
+
 
 def get_raw_data_from_p8_file(instr, filename=None):
     header_title_str = instr.readline()
@@ -258,75 +263,97 @@ def get_raw_data_from_p8_file(instr, filename=None):
 
     return data
 
-def from_lines(lines, version):
-		"""Create an instance based on .p8 data lines.
 
-		The base implementation reads lines of ASCII-encoded hexadecimal bytes.
-
-		Args:
-			lines: .p8 lines for the section.
-			version: The PICO-8 data version from the game file header.
-
-		Returns:
-			A Gfx instance.
-		"""
-		datastrs = []
-		for line in lines:
-				if len(line) != 129:
-						continue
-
-				larray = list(line.rstrip())
-				for i in range(0, 128, 2):
-						(larray[i], larray[i+1]) = (larray[i+1], larray[i])
-
-				larray_str = str(bytes(larray), encoding='ascii')
-				datastrs.append(bytearray.fromhex(larray_str))
-
-		data = b''.join(datastrs)
-		return bytearray(b'\x00' * 128 * 64)
-
-def mapbytes_from_lines(lines, version):
-		"""Create an instance based on .p8 data lines.
-
-		The base implementation reads lines of ASCII-encoded hexadecimal bytes.
-
-		Args:
-			lines: .p8 lines for the section.
-			version: The PICO-8 data version from the game file header.
-
-		Returns:
-			A Gfx instance.
-		"""
-		datastrs = ""
-		for line in lines:
-				if len(line) != 129:
-						continue
-
-				larray = list(line.rstrip())
-				for i in range(0, 128, 2):
-						(larray[i], larray[i+1]) = (larray[i+1], larray[i])
-				substring = ", ".join(("0x{0:X}".format(element)) for element in larray)
-				datastrs += substring + "\n"
-		return datastrs
-
-# todo import portion from gfx into map
 def from_lines(lines, version):
     """Create an instance based on .p8 data lines.
 
     The base implementation reads lines of ASCII-encoded hexadecimal bytes.
 
     Args:
-        lines: .p8 lines for the section.
-        version: The PICO-8 data version from the game file header.
+            lines: .p8 lines for the section.
+            version: The PICO-8 data version from the game file header.
+
+    Returns:
+            A Gfx instance.
     """
-    formattedlines = []
-    for i in range(len(lines)):
-        line = lines[i]
-        myarray = bytearray.fromhex(str(line.rstrip(), encoding='ascii'))
-        substring = ", ".join(("0x{0:02X}".format(element)) for element in myarray)
-        if i < len(lines) - 1:
-            substring = "\t" + substring + ",\n"
-        else:
-            substring = "\t" + substring
-        formattedlines.append(substring)
-    return "#include <array>\nusing namespace std;\n\narray<uint_least8_t, 16384> map_data =\n{\n"+("".join(formattedlines))+"\n};"
+    datastrs = []
+    for line in lines:
+        if len(line) != 129:
+            continue
+
+        larray = list(line.rstrip())
+        for i in range(0, 128, 2):
+            (larray[i], larray[i+1]) = (larray[i+1], larray[i])
+
+        larray_str = str(bytes(larray), encoding='ascii')
+        datastrs.append(bytearray.fromhex(larray_str))
+
+    data = b''.join(datastrs)
+    return bytearray(b'\x00' * 128 * 64)
+
+
+def mapbytes_from_lines(lines, version):
+    """Create an instance based on .p8 data lines.
+
+    The base implementation reads lines of ASCII-encoded hexadecimal bytes.
+
+    Args:
+            lines: .p8 lines for the section.
+            version: The PICO-8 data version from the game file header.
+
+    Returns:
+            A Gfx instance.
+    """
+    datastrs = ""
+    for line in lines:
+        if len(line) != 129:
+            continue
+
+        larray = list(line.rstrip())
+        for i in range(0, 128, 2):
+            (larray[i], larray[i+1]) = (larray[i+1], larray[i])
+        substring = ", ".join(("0x{0:X}".format(element))
+                              for element in larray)
+        datastrs += substring + "\n"
+    return datastrs
+
+# todo import portion from gfx into map
+
+
+def from_lines(lines, gfxlines, version):
+	"""Create an instance based on .p8 data lines.
+
+	The base implementation reads lines of ASCII-encoded hexadecimal bytes.
+
+	Args:
+			lines: .p8 lines for the section.
+			version: The PICO-8 data version from the game file header.
+	"""
+	formattedlines = []
+	for line in lines:
+		myarray = bytearray.fromhex(str(line.rstrip(), encoding='ascii'))
+		substring = ", ".join(("0x{0:02X}".format(element))
+													for element in myarray)
+		substring = "\t" + substring + ",\n"
+		formattedlines.append(substring)
+	for j in range(64, 128, 1):
+		gfxline = gfxlines[j]
+		if len(gfxline) == 129:
+			datastrs = []
+			substring = ""
+			larray = list(gfxline.rstrip())
+			for i in range(0, 128, 2):
+				(larray[i], larray[i+1]) = (larray[i+1], larray[i])
+			larray_str = str(bytes(larray), encoding='ascii')
+			for i in range(0, 126, 2):
+				substring += "0x" + larray_str[i : i + 2] + ", "
+			for i in range(124, 126, 2):
+				substring += "0x" + larray_str[i : i + 2]
+			if j < 127:
+				substring = "\t" + substring + ",\n"
+			else:
+				substring = "\t" + substring
+			formattedlines.append(substring)
+	return "#include <array>\nusing namespace std;\n\narray<uint_least8_t, 16384> map_data =\n{\n"+("".join(formattedlines))+"\n};"
+
+
