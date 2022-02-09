@@ -1930,8 +1930,14 @@ static struct {
 	.target=5
 };
 
-int secondaryCamera(int levelindex) {
- auto currentoffsets = leveloffsets[levelindex];
+// only move camera at all if camera is set to movable
+int secondaryCamera() {
+ auto currentoffsets = leveloffsets[level_index()];
+ if (currentoffsets[2] == 1) {
+	 return cam.x;
+ } else {
+	 return currentoffsets[0];
+ }
 }
 
 void init() {
@@ -1956,5 +1962,5 @@ void draw(uint32_t tick) {
 	pico8::print(to_string(level_index()), 100, 4, 8); // DEBUG
 	target();
 	blend(COPY);
-	blit(pico8::PICO8SCREEN, cam.x, leveloffsets[level_index()][1], 120, 120, 0, 0);
+	blit(pico8::PICO8SCREEN, secondaryCamera(), leveloffsets[level_index()][1], 120, 120, 0, 0);
 }

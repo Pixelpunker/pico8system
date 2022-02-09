@@ -1,32 +1,49 @@
 # Todo
 
 ## Bug fixes
+
+* Screen shake issues -- noch mehr Space?
+* Replizierbarer Crash bei mehrmals hintereinander fallen, Level 3
+* Too few particles
+* Too fast
 * ~~Garbage in some tiles~~
-	* ~~Liegt am offset in negativen Bereich~~
-	* ~~Anderen Buffertyp definieren...~~
+  * ~~Liegt am offset in negativen Bereich~~
+  * ~~Anderen Buffertyp definieren...~~
 * ~~Celeste moves to the right/left~~
 * ~~Tile flags on left side~~
-* Too few particles
 * ~~Sometimes crashes when falling~~
-* Too fast
-* Load second half of map
-* Screen shake issues -- noch mehr Space? *
-* Replizierbarer Crash bei mehrmals hintereinander fallen, Level 3 *
+* Kameraanpassung für HUD Elemente
 
 ## Features
-* Camera system
-* ~~Combine cameras~~
+
+* **Load second half of map**
+* Load gfx
+* Load sfx
+* Different font
 * 30 FPS mode
+* Palette support for sprites
+* Palette blend mode (mask+)
+* Palette copy mode (copy+)
+* Sound effects
+* Sound and music on second core
+* ~~Camera system~~
+* ~~Combine cameras~~
 * Menu system
-	* continue
-	* return to title
-	* sound: on/sfx/off
+  * continue
+  * return to title
+  * sound: on/off
+  * (colors: low/high)
+  * (scanlines: on/off)
 * Intro animation
 
 ## Later
-* Sound effects
-* Load gfx
-* Load sfx
+
+* Flash file system support für PicoSystem SDK
 * Save state
+* Flash save support
 * Run export script during build
-* Sound and music on second core
+* High color mode
+* Leuchtende Beeren
+* Scanlines
+* B-Sides Level, nach Komplettieren von Level 8
+  * heimlich starten durch X+Y statt A+B
