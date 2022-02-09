@@ -16,7 +16,7 @@
 
 ## Features
 
-* **Load second half of map**
+* ~~Load second half of map~~
 * Load gfx
 * Load sfx
 * Different font
