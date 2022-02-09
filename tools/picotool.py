@@ -329,31 +329,32 @@ def from_lines(lines, gfxlines, version):
 			lines: .p8 lines for the section.
 			version: The PICO-8 data version from the game file header.
 	"""
+	arrayofbytes = []
 	formattedlines = []
 	for line in lines:
 		myarray = bytearray.fromhex(str(line.rstrip(), encoding='ascii'))
-		substring = ", ".join(("0x{0:02X}".format(element))
-													for element in myarray)
-		substring = "\t" + substring + ",\n"
-		formattedlines.append(substring)
+		for element in myarray:
+			arrayofbytes.append(element)
 	for j in range(64, 128, 1):
 		gfxline = gfxlines[j]
 		if len(gfxline) == 129:
 			datastrs = []
-			substring = ""
 			larray = list(gfxline.rstrip())
 			for i in range(0, 128, 2):
 				(larray[i], larray[i+1]) = (larray[i+1], larray[i])
 			larray_str = str(bytes(larray), encoding='ascii')
-			for i in range(0, 126, 2):
-				substring += "0x" + larray_str[i : i + 2] + ", "
-			for i in range(124, 126, 2):
-				substring += "0x" + larray_str[i : i + 2]
-			if j < 127:
+			for i in range(0, 128, 2):
+				arrayofbytes.append(int(larray_str[i : i + 2], 16))
+	chunk_size = 16
+	chunked_list = [arrayofbytes[i:i+chunk_size] for i in range(0, len(arrayofbytes), chunk_size)]
+	for i in range(len(chunked_list)):
+		substring = ", ".join(("0x{0:02X}".format(element))
+													for element in chunked_list[i])
+		if i < len(chunked_list) - 1:
 				substring = "\t" + substring + ",\n"
-			else:
+		else:
 				substring = "\t" + substring
-			formattedlines.append(substring)
+		formattedlines.append(substring)
 	return "#include <array>\nusing namespace std;\n\narray<uint_least8_t, 16384> map_data =\n{\n"+("".join(formattedlines))+"\n};"
 
 
