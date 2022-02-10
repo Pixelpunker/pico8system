@@ -3,9 +3,9 @@
 ## Bug fixes
 
 * Screen shake issues -- noch mehr Space?
-* Replizierbarer Crash bei mehrmals hintereinander fallen, Level 3
-* Too few particles
-* Too fast
+* ~~Replizierbarer Crash bei mehrmals hintereinander fallen, Level 3~~
+* ~~Too few particles~~
+* ~~Too fast~~
 * ~~Garbage in some tiles~~
   * ~~Liegt am offset in negativen Bereich~~
   * ~~Anderen Buffertyp definieren...~~
@@ -14,13 +14,17 @@
 * ~~Sometimes crashes when falling~~
 * Kameraanpassung für HUD Elemente
 
+## Später
+
+* Test der Funktionen rand, P8Floor und dem Ergebnis von / in Bezug auf number statt float
+
 ## Features
 
 * ~~Load second half of map~~
 * Load gfx
 * Load sfx
 * Different font
-* 30 FPS mode
+* ~~30 FPS mode~~
 * Palette support for sprites
 * Palette blend mode (mask+)
 * Palette copy mode (copy+)
