@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <array>
+#include <vector>
+#include <algorithm>
 #include "pico8.cpp"
 #include "celeste.hpp"
 using namespace picosystem;
@@ -280,26 +282,26 @@ static void PRELUDE_initclouds() {
 	}
 }
 
-typedef struct {
-	bool active;
-	number x,y,s,spd,off,c,h,t;
-	VEC spd2; //used by dead particles, moved from spd
-} PARTICLE;
-static PARTICLE particles[25];
-static PARTICLE dead_particles[8];
+struct PARTICLE
+{
+	number x, y, s, spd, off, c, h, t;
+	VEC spd2; // used by dead particles, moved from spd
+};
+vector<PARTICLE> particles;
+vector<PARTICLE> dead_particles;
 
-//top level init code has been moved into a function
-static void PRELUDE_initparticles() {
-	for (int i=0; i<=24; i++) {
-		particles[i] = (PARTICLE){
-			.active=true,
-			.x=rnd(128),
-			.y=rnd(128),
-			.s=0+P8flr(rnd(5)/4),
-			.spd=0.25f+rnd(5),
-			.off=rnd(1),
-			.c=6+P8flr(0.5+rnd(1))
-		};
+// top level init code has been moved into a function
+static void PRELUDE_initparticles()
+{
+	for (auto i = 0; i <= 24; i++)
+	{
+		particles.push_back((PARTICLE){
+				.x = rnd(128),
+				.y = rnd(128),
+				.s = 2 + P8flr(rnd(5) / 4),
+				.spd = 0.25f + rnd(5),
+				.off = rnd(1),
+				.c = 6 + P8flr(0.5 + rnd(1))});
 	}
 }
 
@@ -367,8 +369,7 @@ typedef struct {
 	VECI off2; //changed from off..
 
 	//big chest
-	PARTICLE particles[50];
-	int particle_count;
+	vector<PARTICLE> particles;
 
 	//flag
 	int score;
@@ -1255,7 +1256,7 @@ static void BIG_CHEST_draw(OBJ* this) {
 			init_object(OBJ_SMOKE,this->x,this->y);
 			init_object(OBJ_SMOKE,this->x+8,this->y);
 			this->timer=60;
-			this->particle_count = 0;
+			this->particles.clear();
 		}
 		pico8::spr(96,this->x,this->y,   1,1,false,false);
 		pico8::spr(97,this->x+8,this->y,  1,1,false,false);
@@ -1263,30 +1264,28 @@ static void BIG_CHEST_draw(OBJ* this) {
 		this->timer-=1;
 		shake=5;
 		flash_bg=true;
-		if (this->timer<=45 && this->particle_count<50) {
-			this->particles[this->particle_count++] = (PARTICLE){
-				.active=true,
+		if (this->timer<=45 && this->particles.size()<50) {
+			this->particles.push_back((PARTICLE){
 				.x=1+rnd(14),
 				.y=0,
-				.s=0,
+				.s=1,
 				.spd=8+rnd(8),
 				.off=0,
-				.c=0,
+				.c=7,
 				.h=32+rnd(32)
-			};
+			});
 		}
 		if (this->timer<0) {
 			this->state=2;
-			this->particle_count=0;
+			this->particles.clear();
 			flash_bg=false;
 			new_bg=true;
 			init_object(OBJ_ORB,this->x+4,this->y+4);
 			pause_player=false;
 		}
-		for (int i = 0; i < this->particle_count; i++) {
-			PARTICLE* p = &this->particles[i];
-			p->y+=p->spd;
-			pico8::line(this->x+p->x,this->y+8-p->y,this->x+p->x,P8min(this->y+8-p->y+p->h,this->y+8),7);
+		for (auto& p : this->particles) {
+			p.y+=p.spd;
+			pico8::line(this->x+p.x,this->y+8-p.y,this->x+p.x,P8min(this->y+8-p.y+p.h,this->y+8),7);
 		}
 	}
 	pico8::spr(112,this->x,this->y+8,   1,1,false,false);
@@ -1297,7 +1296,7 @@ static void BIG_CHEST_draw(OBJ* this) {
 static void ORB_init(OBJ* this) {
 	this->spd.y=-4;
 	this->solids=false;
-	this->particle_count = 0;
+	this->particles.clear();
 }
 static void ORB_draw(OBJ* this) {
 	this->spd.y=appr(this->spd.y,0,0.5);
@@ -1441,33 +1440,27 @@ static void destroy_object(OBJ* obj) {
 	objects[MAX_OBJECTS-1].active = false;
 }
 
-static void kill_player(OBJ* obj) {
-	sfx_timer=12;
+static void kill_player(OBJ *obj)
+{
+	sfx_timer = 12;
 	pico8::sfx(0);
-	deaths+=1;
-	shake=10;
-	//destroy_object(obj);
+	deaths += 1;
+	shake = 10;
+	// destroy_object(obj);
 	int dead_particles_count = 0;
-	for (number dir=0; dir <= 7; dir+=1) {
-		number angle=(dir/8);
-		dead_particles[dead_particles_count++] = (PARTICLE){
-			.active = true,
-			.x=obj->x+4,
-			.y=obj->y+4,
-			.s=0,
-			.spd=0,
-			.off=0,
-			.c=0,
-			.h=0,
-			.t=10,
-			.spd2=(VEC){
-				.x=P8sin(angle)*3,
-				.y=P8cos(angle)*3
-			}
-		};
+	for (number dir = 0; dir <= 7; dir += 1)
+	{
+		number angle = (dir / 8);
+		auto p = dead_particles[dead_particles_count++];
+		p.x = obj->x + 4;
+		p.y = obj->y + 4;
+		p.t = 10;
+		p.spd2 = (VEC){
+				.x = P8sin(angle) * 3,
+				.y = P8cos(angle) * 3};
 		restart_room();
-	}
-	destroy_object(obj); //LEMON: moved here to avoid using ->x and ->y from dead object
+	};
+	destroy_object(obj); // LEMON: moved here to avoid using ->x and ->y from dead object
 }
 
 // room functions //
@@ -1722,33 +1715,37 @@ void Celeste_P8_draw() {
 	pico8::map(room.x * 16,room.y * 16,0,0,16,16,8);
    
 	// particles
-	for (int i = 0; i <= 24; i++) {
-		PARTICLE* p = &particles[i];
-		p->x += p->spd;
-		p->y += P8sin(p->off);
-		p->off+= P8min(0.05,p->spd/32);
-		pico8::rectfill(p->x,p->y,p->x+p->s,p->y+p->s,p->c);
-		if (p->x>128+4) { 
-			p->x=-4;
-			p->y=rnd(128);
+	for (auto& p : particles) {
+		p.x += p.spd;
+		p.y += P8sin(p.off);
+		p.off+= P8min(0.05,p.spd/32);
+		pico8::rectfill(p.x,p.y,p.x+p.s,p.y+p.s,p.c);
+		if (p.x>128+4) { 
+			p.x=-4;
+			p.y=rnd(128);
 		}
-		p++;
 	}
-   
-	// dead particles
-	for (int i = 0; i <= 7; i++) {
-		PARTICLE* p = &dead_particles[i];
-		if (p->active) {
-			p->x += p->spd2.x;
-			p->y += p->spd2.y;
-			p->t -=1;
-			if (p->t <= 0) { p->active = false; }
-			pico8::rectfill(p->x-p->t/5,p->y-p->t/5,p->x+p->t/5,p->y+p->t/5,14+P8modulo(p->t,2));
-		}
 
-		p++;
+	// dead particles
+	for (auto& p : dead_particles)
+	{
+		p.x += p.spd2.x;
+		p.y += p.spd2.y;
+		p.t -= 1;
+		// if (p.t <= 0) { dead_particles.erase(p); }
+		// pico8::rectfill(p.x-p.t/5,p.y-p.t/5,p.x+p.t/5,p.y+p.t/5,8);
 	}
-   
+
+	remove_if(
+			dead_particles.begin(), dead_particles.end(),
+			[](auto &p)
+			{ return (p.t <= 0); });
+
+	for (auto& p : dead_particles)
+	{
+		pico8::rectfill(p.x - p.t / 5, p.y - p.t / 5, p.x + p.t / 5, p.y + p.t / 5, 8);
+	}
+
 	// draw outside of the screen for screenshake
 	pico8::rectfill(-5,-5,-1,133,0);
 	pico8::rectfill(-5,-5,133,-1,0);
@@ -1776,6 +1773,7 @@ void Celeste_P8_draw() {
 			pico8::rectfill(128-diff,0,128,128,0);
 		}
 	}
+	// draw_time(4,4); // debugging and 30 fps test
 }
 
 static void draw_object(OBJ* obj) {
@@ -1959,7 +1957,7 @@ void draw(uint32_t tick) {
 	blend(MASK);
   target(pico8::PICO8SCREEN);
 	Celeste_P8_draw();
-	pico8::print(to_string(level_index()), 100, 4, 8); // DEBUG
+	// pico8::print(to_string(level_index()), 100, 4, 8); // DEBUG
 	target();
 	blend(COPY);
 	blit(pico8::PICO8SCREEN, secondaryCamera(), leveloffsets[level_index()][1], 120, 120, 0, 0);
