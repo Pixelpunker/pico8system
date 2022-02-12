@@ -1,5 +1,6 @@
 #include "picosystem.hpp"
 #include "picomath.cpp"
+#include "sfx.cpp"
 #include <optional>
 #include <array>
 #include "assets/data.h"
@@ -169,8 +170,10 @@ static const uint8_t minimal_font_width[96] = {
   array<color_t, (uint32_t)16> secondary_palette;
   bool swapped_buttons = false;
 
-  color_t _fdp[128 * 128] __attribute__ ((aligned (4))) = { };
-  static buffer_t *PICO8SCREEN = buffer(128, 128, _fdp);
+  const int picowidth = 136; // workaround for
+                            // screen shake issue, should be 128
+  color_t _fdp[picowidth * picowidth] __attribute__ ((aligned (4))) = { };
+  static buffer_t *PICO8SCREEN = buffer(picowidth, picowidth, _fdp);
 
   
   // rnd() // clever me uses the current battery voltage as a random seed.
@@ -184,7 +187,7 @@ static const uint8_t minimal_font_width[96] = {
   {
     auto lastpencolor = getCurrentPencolor();
     pen(draw_palette[color]);
-    // pen(255,0,0);
+    // pen(7,7,7);
   	target();
     clear();
     target(pico8::PICO8SCREEN);
@@ -261,6 +264,20 @@ static const uint8_t minimal_font_width[96] = {
   void pal(number c0, number c1, number p = 0)
   {
     pal((int)c0, (int)c1, (int)p);
+  }
+
+  void rect(int32_t x, int32_t y, int32_t x2, int32_t y2, int32_t c)
+  {
+    
+    auto lastpencolor = getCurrentPencolor();
+    pen(draw_palette[c]);
+    picosystem::rect(x, y, x2 - x, y2 - y);
+    pen(lastpencolor);
+  }
+
+  void rect(number x, number y, number x2, number y2, number c)
+  {
+    rect((int)x, (int)y, (int)x2, (int)y2, (int)c);
   }
 
   void rectfill(int32_t x, int32_t y, int32_t x2, int32_t y2, int32_t c)
