@@ -317,8 +317,40 @@ def mapbytes_from_lines(lines, version):
         datastrs += substring + "\n"
     return datastrs
 
-# todo import portion from gfx into map
-
+system_palette = [
+    '0x0000', #rgb2(0, 0, 0),         # 0 	black (also transparent by default for sprites)
+    '0x2511', #rgb2(29, 43, 83),      # 1 	dark-blue
+    '0x2527', #rgb2(126, 37, 83),     # 2 	dark-purple
+    '0x8530', #rgb2(0, 135, 81),      # 3 	dark-green
+    '0x534A', #rgb2(171, 82, 54),     # 4 	brown
+    '0x5455', #rgb2(95, 87, 79),      # 5 	dark-grey
+    '0xCC6C', #rgb2(194, 195, 199),   # 6 	light-grey
+    '0xFE7F', #rgb2(255, 241, 232),   # 7 	white
+    '0x048F', #rgb2(255, 0, 77),      # 8 	red
+    '0xA09F', #rgb2(255, 163, 0),     # 9	orange
+    '0xE2AF', #rgb2(255, 236, 39),    # 10	yellow
+    '0xE3B0', #rgb2(0, 228, 54),      # 11 green
+    '0xAFC2', #rgb2(41, 173, 255),    # 12 blue
+    '0x79D8', #rgb2(131, 118, 156),   # 13 lavender
+    '0x7AEF', #rgb2(255, 119, 168),   # 14 pink
+    '0xCAFF', #rgb2(255, 204, 170),   # 15 light-peach
+    '0x1102', #rgb2(41, 24, 20),    # 128 	brownish-black
+    '0x1311', #rgb2(17, 29, 53),    # 129 	darker-blue
+    '0x2324', #rgb2(66, 33, 54),    # 130 	darker-purple
+    '0x5531', #rgb2(18, 83, 89),    # 131 	blue-green
+    '0x2247', #rgb2(116, 47, 41),   # 132 	dark-brown
+    '0x3354', #rgb2(73, 51, 59),    # 133 	darker-grey
+    '0x876A', #rgb2(162, 136, 121), # 134 	medium-grey
+    '0xE77F', #rgb2(243, 239, 125), # 135 	light-yellow
+    '0x158B', #rgb2(190, 18, 80),   # 136 	dark-red
+    '0x629F', #rgb2(255, 108, 36),  # 137 	dark-orange
+    '0xE2AA', #rgb2(168, 231, 46),  # 138 	lime-green
+    '0xB4B0', #rgb2(0, 181, 67),    # 139 	medium-green
+    '0x5BC0', #rgb2(6, 90, 181),    # 140	true-blue
+    '0x46D7', #rgb2(117, 70, 101),  # 141 	mauve
+    '0x65EF', #rgb2(255, 110, 89),  # 142 	dark-peach
+    '0x98FF' #rgb2(255, 157, 129), # 143 	peach    
+]
 
 def from_lines(lines, gfxlines, version):
 	"""Create an instance based on .p8 data lines.
