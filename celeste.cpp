@@ -66,6 +66,13 @@ typedef enum {
   right    = 2
 } direction;
 
+typedef enum {
+  game  = 0,
+  menu = 1
+} gamestate;
+
+gamestate currentgamestate;
+
 static struct {
 	int x0, x1, target1, target2, target3;
 	direction findDirection(number playerx) {
@@ -1938,27 +1945,67 @@ int secondaryCamera() {
  }
 }
 
-void init() {
-	pico8::init(true);
+auto mountain = buffer(95, 48, mountaindata);
 
+void init()
+{
+	pico8::init(true);
+	currentgamestate = game;
 	Celeste_P8_init();
 }
 
-void update(uint32_t tick) {
-	Celeste_P8_update();
-	auto direction = movetarget.findDirection(playerx);
-	if (direction == left) { movetarget.target1 = 0; }
-	auto target = movetarget.findTarget(playerx);
-	cam.x = target;
-	cam.update();
+void update(uint32_t tick)
+{
+	if (pressed(Y)) {
+		if (currentgamestate == game) {
+			currentgamestate = menu;
+			spritesheet(mountain);
+		} else {
+			currentgamestate = game;
+			spritesheet(pico8::celeste);
+		}
+	}
+
+	if (currentgamestate == game)
+	{
+		Celeste_P8_update();
+		auto direction = movetarget.findDirection(playerx);
+		if (direction == left)
+		{
+			movetarget.target1 = 0;
+		}
+		auto target = movetarget.findTarget(playerx);
+		cam.x = target;
+		cam.update();
+	}
 }
 
-void draw(uint32_t tick) {
-	blend(MASK);
-  target(pico8::PICO8SCREEN);
-	Celeste_P8_draw();
-	// pico8::print(to_string(level_index()), 100, 4, 8); // DEBUG
-	target();
-	blend(COPY);
-	blit(pico8::PICO8SCREEN, secondaryCamera(), leveloffsets[level_index()][1], 120, 120, 0, 0);
+void draw(uint32_t tick)
+{
+	if (currentgamestate == game)
+	{
+		blend(MASK);
+		target(pico8::PICO8SCREEN);
+		Celeste_P8_draw();
+		// pico8::print(to_string(level_index()), 100, 4, 8); // DEBUG
+		target();
+		blend(COPY);
+		blit(pico8::PICO8SCREEN, secondaryCamera(), leveloffsets[level_index()][1], 120, 120, 0, 0);
+	}
+	if (currentgamestate == menu) {
+		blend(COPY);
+		target();
+		picosystem::pen(0x00f0);
+		clear();
+		picosystem::sprite(0, 11, 72, 16, 16);
+		picosystem::pen(0xFFFF);
+		text("resume", 17, 12);
+		picosystem::pen(0x54F5);
+		text("return to title", 17, 22);
+		text("sound: on", 17, 32);
+		text("autosave: on", 17, 42);
+		text("colors: low", 17, 52);
+		text("scanlines: off", 17, 62);
+		text("credits", 17, 72);
+	}
 }
