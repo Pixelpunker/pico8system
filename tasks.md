@@ -2,7 +2,7 @@
 
 ## Bug fixes
 
-* Screen shake issues -- noch mehr Space?
+* ~~Screen shake issues -- noch mehr Space?~~
 * ~~Replizierbarer Crash bei mehrmals hintereinander fallen, Level 3~~
 * ~~Too few particles~~
 * ~~Too fast~~
@@ -14,20 +14,16 @@
 * ~~Sometimes crashes when falling~~
 * Kameraanpassung für HUD Elemente
 
-## Später
-
-* Test der Funktionen rand, P8Floor und dem Ergebnis von / in Bezug auf number statt float
-
 ## Features
 
-* ~~Load second half of map~~
-* Load gfx
-* Load sfx
-* Different font
-* ~~30 FPS mode~~
+* **Load gfx**
 * Palette support for sprites
 * Palette blend mode (mask+)
 * Palette copy mode (copy+)
+* ~~Load second half of map~~
+* Load sfx
+* Different font
+* ~~30 FPS mode~~
 * Sound effects
 * Sound and music on second core
 * ~~Camera system~~
@@ -38,9 +34,14 @@
   * sound: on/off
   * (colors: low/high)
   * (scanlines: on/off)
-* Intro animation
+* ~~Intro animation~~
 
-## Later
+## Später
+
+* Test der Funktionen rand, P8Floor und dem Ergebnis von / in Bezug auf number statt float
+* Workaround für out of buffer durch richtige Lösung ersetzen (sollte Hintergrundfarbe liefern, wenn außerhalb des Grafikspeichers gelesen wird)
+
+## Version 1.0
 
 * Flash file system support für PicoSystem SDK
 * Save state
@@ -49,5 +50,5 @@
 * High color mode
 * Leuchtende Beeren
 * Scanlines
-* B-Sides Level, nach Komplettieren von Level 8
+* B-Sides Level, nach Komplettieren von Level 8 oder Sammeln von x Beeren
   * heimlich starten durch X+Y statt A+B
