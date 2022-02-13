@@ -1956,16 +1956,6 @@ void init()
 
 void update(uint32_t tick)
 {
-	if (pressed(Y)) {
-		if (currentgamestate == game) {
-			currentgamestate = menu;
-			spritesheet(mountain);
-		} else {
-			currentgamestate = game;
-			spritesheet(pico8::celeste);
-		}
-	}
-
 	if (currentgamestate == game)
 	{
 		Celeste_P8_update();
@@ -1977,6 +1967,16 @@ void update(uint32_t tick)
 		auto target = movetarget.findTarget(playerx);
 		cam.x = target;
 		cam.update();
+	}
+
+	if (pressed(Y)) {
+		if (currentgamestate == game) {
+			currentgamestate = menu;
+			spritesheet(mountain);
+		} else {
+			currentgamestate = game;
+			spritesheet(pico8::celeste);
+		}
 	}
 }
 
@@ -1991,21 +1991,20 @@ void draw(uint32_t tick)
 		target();
 		blend(COPY);
 		blit(pico8::PICO8SCREEN, secondaryCamera(), leveloffsets[level_index()][1], 120, 120, 0, 0);
-	}
-	if (currentgamestate == menu) {
+	} else {
 		blend(COPY);
 		target();
 		picosystem::pen(0x00f0);
 		clear();
 		picosystem::sprite(0, 11, 72, 16, 16);
 		picosystem::pen(0xFFFF);
-		text("resume", 17, 12);
+		text("resume", 15, 11);
 		picosystem::pen(0x54F5);
-		text("return to title", 17, 22);
-		text("sound: on", 17, 32);
-		text("autosave: on", 17, 42);
-		text("colors: low", 17, 52);
-		text("scanlines: off", 17, 62);
-		text("credits", 17, 72);
+		text("return to title", 15, 21);
+		text("sound: on", 15, 31);
+		text("autosave: on", 15, 41);
+		text("colors: low", 15, 51);
+		text("scanlines: off", 15, 61);
+		text("credits", 15, 71);
 	}
 }
