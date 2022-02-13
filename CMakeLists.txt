@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 # Set your project name here
-set(PROJECT_NAME pico8system)
+set(PROJECT_NAME celeste)
 
 # Set your project sources here
 set(PROJECT_SOURCES
@@ -18,16 +18,20 @@ endif()
 # Pull in PICO SDK
 include(pico_sdk_import.cmake)
 
-# set up proejct
+# set up project
 project(${PROJECT_NAME} C CXX ASM)
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
+
 
 # Initialize the SDK
 pico_sdk_init()
 
+set(PICO_BOARD pimoroni_picosystem)
+
 # Find the PicoSystem library
 include(picosystem_sdk_import.cmake)
+
 
 # Create the output target
 picosystem_executable(
@@ -39,7 +43,7 @@ picosystem_executable(
 
 # Set your build options here
 pixel_double(${PROJECT_NAME})          # 120x120 resolution game, pixel-doubled to 240x240
-disable_startup_logo(${PROJECT_NAME})  # Skip the PicoSystem splash
+# disable_startup_logo(${PROJECT_NAME})  # Skip the PicoSystem splash
 #no_font(${PROJECT_NAME})              # Omit the default font
 no_spritesheet(${PROJECT_NAME})        # Omit the default spritesheet
 #no_overclock(${PROJECT_NAME})         # Don't overclock
