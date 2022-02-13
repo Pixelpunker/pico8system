@@ -4,6 +4,7 @@
 #include <array>
 #include "assets/data.h"
 #include "assets/assets.hpp"
+#include "assets/mountain.hpp"
 using namespace std;
 using namespace picosystem;
 using namespace picomath;
@@ -651,6 +652,7 @@ static const uint8_t minimal_font_width[96] = {
                                  // same place while moving the viewport
   }
 
+  auto celeste = buffer(128, 64, spritedata);
 
   void init(bool swapped_buttons = false)
   {
@@ -665,7 +667,7 @@ static const uint8_t minimal_font_width[96] = {
 
     blend(MASK);
     // load spritesheet
-    spritesheet(buffer(128, 64, spritedata));
+    spritesheet(celeste);
     // reset palette
     pal();
   }
