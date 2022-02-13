@@ -1,6 +1,5 @@
 #include "picosystem.hpp"
 #include "picomath.cpp"
-#include "sfx.cpp"
 #include <optional>
 #include <array>
 #include "assets/data.h"
@@ -130,44 +129,46 @@ static const uint8_t minimal_font_width[96] = {
 
 
   // tip: adjust systemoffset during gameplay
-  array<color_t, (uint32_t)16> system_palette = {
-      rgb2(0, 0, 0),         // 0 	black (also transparent by default for sprites)
-      rgb2(29, 43, 83),      // 1 	dark-blue
-      rgb2(126, 37, 83),     // 2 	dark-purple
-      rgb2(0, 135, 81),      // 3 	dark-green
-      rgb2(171, 82, 54),     // 4 	brown
-      rgb2(95, 87, 79),      // 5 	dark-grey
-      rgb2(194, 195, 199),   // 6 	light-grey
-      rgb2(255, 241, 232),   // 7 	white
-      rgb2(255, 0, 77),      // 8 	red
-      rgb2(255, 163, 0),     // 9	orange
-      rgb2(255, 236, 39),    // 10	yellow
-      rgb2(0, 228, 54),      // 11 green
-      rgb2(41, 173, 255),    // 12 	blue
-      rgb2(131, 118, 156),   // 13 	lavender
-      rgb2(255, 119, 168),   // 14 	pink
-      rgb2(255, 204, 170, 1) // 15 	light-peach
+  static const array<color_t, 32> system_palette = {
+      0x00F0, //rgb2(0, 0, 0),         // 0 	black (also transparent by default for sprites)
+      0x25F1, //rgb2(29, 43, 83),      // 1 	dark-blue
+      0x25F7, //rgb2(126, 37, 83),     // 2 	dark-purple
+      0x85F0, //rgb2(0, 135, 81),      // 3 	dark-green
+      0x53FA, //rgb2(171, 82, 54),     // 4 	brown
+      0x54F5, //rgb2(95, 87, 79),      // 5 	dark-grey
+      0xCCFC, //rgb2(194, 195, 199),   // 6 	light-grey
+      0xFEFF, //rgb2(255, 241, 232),   // 7 	white
+      0x04FF, //rgb2(255, 0, 77),      // 8 	red
+      0xA0FF, //rgb2(255, 163, 0),     // 9	orange
+      0xE2FF, //rgb2(255, 236, 39),    // 10	yellow
+      0xE3F0, //rgb2(0, 228, 54),      // 11 green
+      0xAFF2, //rgb2(41, 173, 255),    // 12 blue
+      0x79F8, //rgb2(131, 118, 156),   // 13 lavender
+      0x7AFF, //rgb2(255, 119, 168),   // 14 pink
+      0xCAFF, //rgb2(255, 204, 170),   // 15 light-peach
+      0x11F2, //rgb2(41, 24, 20),    // 128 	brownish-black
+      0x13F1, //rgb2(17, 29, 53),    // 129 	darker-blue
+      0x23F4, //rgb2(66, 33, 54),    // 130 	darker-purple
+      0x55F1, //rgb2(18, 83, 89),    // 131 	blue-green
+      0x22F7, //rgb2(116, 47, 41),   // 132 	dark-brown
+      0x33F4, //rgb2(73, 51, 59),    // 133 	darker-grey
+      0x87FA, //rgb2(162, 136, 121), // 134 	medium-grey
+      0xE7FF, //rgb2(243, 239, 125), // 135 	light-yellow
+      0x15FB, //rgb2(190, 18, 80),   // 136 	dark-red
+      0x62FF, //rgb2(255, 108, 36),  // 137 	dark-orange
+      0xE2FA, //rgb2(168, 231, 46),  // 138 	lime-green
+      0xB4F0, //rgb2(0, 181, 67),    // 139 	medium-green
+      0x5BF0, //rgb2(6, 90, 181),    // 140	true-blue
+      0x46F7, //rgb2(117, 70, 101),  // 141 	mauve
+      0x65FF, //rgb2(255, 110, 89),  // 142 	dark-peach
+      0x98FF //rgb2(255, 157, 129), // 143 	peach
   };
-  array<color_t, (uint32_t)16> secret_palette = {
-      rgb2(41, 24, 20),    // 128 	brownish-black
-      rgb2(17, 29, 53),    // 129 	darker-blue
-      rgb2(66, 33, 54),    // 130 	darker-purple
-      rgb2(18, 83, 89),    // 131 	blue-green
-      rgb2(116, 47, 41),   // 132 	dark-brown
-      rgb2(73, 51, 59),    // 133 	darker-grey
-      rgb2(162, 136, 121), // 134 	medium-grey
-      rgb2(243, 239, 125), // 135 	light-yellow
-      rgb2(190, 18, 80),   // 136 	dark-red
-      rgb2(255, 108, 36),  // 137 	dark-orange
-      rgb2(168, 231, 46),  // 138 	lime-green
-      rgb2(0, 181, 67),    // 139 	medium-green
-      rgb2(6, 90, 181),    // 140	true-blue
-      rgb2(117, 70, 101),  // 141 	mauve
-      rgb2(255, 110, 89),  // 142 	dark-peach
-      rgb2(255, 157, 129), // 143 	peach
+  array<color_t, (uint_fast8_t)16> draw_palette = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
   };
-  array<color_t, (uint32_t)16> draw_palette;
-  array<color_t, (uint32_t)16> secondary_palette;
+  array<color_t, (uint_fast8_t)16> secondary_palette = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+  };
   bool swapped_buttons = false;
 
   const int picowidth = 136; // workaround for
