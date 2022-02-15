@@ -11,6 +11,7 @@
 #include <array>
 #include <vector>
 #include <algorithm>
+#include <functional>
 #include "pico8.cpp"
 #include "celeste.hpp"
 using namespace picosystem;
@@ -1761,9 +1762,9 @@ void Celeste_P8_draw() {
    
 // credits
 	if (is_title()) {
-		pico8::print("a+b",58-5,80,5);
-		pico8::print("matt thorson",42-5,96,5);
-		pico8::print("noel berry",46-5,102+2,5);
+		pico8::center("A+B",80,5);
+		pico8::center("Matt Thorson",96,5);
+		pico8::center("Noel Berry",102,5);
 	}
    
 	if (level_index()==30) {
@@ -1947,6 +1948,142 @@ int secondaryCamera() {
 
 auto mountain = buffer(95, 48, mountaindata);
 
+enum setting{
+	none,
+	off,
+	on,
+	low,
+	high
+};
+
+static string settings_to_string(setting setting) {
+	switch (setting)
+	{
+	case none:
+		return "";
+	case off:
+		return ": off";
+	case on:
+		return ": on";
+	case low:
+		return ": low";
+	case high:
+		return ": high";
+	default:
+		return "";
+	}
+}
+
+typedef struct {
+	string text;
+	setting selected; 
+	vector<setting>* settings;
+	function<void()> a_button_action;
+} menuentry;
+
+static auto menupage = 0;
+static auto selectedmenuindex = 0;
+
+void return_to_game() {
+	currentgamestate = game;
+	spritesheet(pico8::celeste);	
+}
+
+void switch_to_menu() {
+	menupage = 0;
+	selectedmenuindex = 0;
+	currentgamestate = menu;
+	spritesheet(mountain);
+}
+
+
+static auto mymenu = new vector<menuentry>{{.text = "resume",
+																		 .selected = none,
+																		 .settings = new vector<setting>{none},
+																		 .a_button_action = return_to_game},
+																		 {.text = "return to title",
+																		 .selected = none,
+																		 .settings = new vector<setting>{none},
+																		 .a_button_action = init},
+																		 {.text = "sound",
+																		 .selected = on,
+																		 .settings = new vector<setting>{off, on},
+																		 .a_button_action = []() {}},
+																		 {.text = "credits",
+																		 .selected = none,
+																		 .settings = new vector<setting>{none},
+																		 .a_button_action = []() { menupage = 2; }}
+																		 };
+
+
+static void menu_update() {
+	if (pressed(UP)) {
+		if (selectedmenuindex > 0) {
+			selectedmenuindex--;
+		}
+	} else if (pressed(DOWN)) {
+		if (selectedmenuindex < mymenu->size()) {
+			selectedmenuindex++;
+		}
+	} 
+	else if (pressed(LEFT)) {
+		 mymenu->at(selectedmenuindex).selected = mymenu->at(selectedmenuindex).settings->front();
+	} 
+	else if (pressed(RIGHT)) {
+		 mymenu->at(selectedmenuindex).selected = mymenu->at(selectedmenuindex).settings->back();
+	}
+	if (pressed(A)) {
+		if (menupage == 0) {
+			mymenu->at(selectedmenuindex).a_button_action();
+		} else if (menupage == 2) {
+			menupage = 0;
+			selectedmenuindex = 0;
+		}
+	}
+	if (pressed(B)) {
+		if (menupage == 0) {
+			return_to_game();
+		} else if (menupage == 2) {
+			menupage = 0;
+			selectedmenuindex = 0;
+		}
+	}
+}
+
+static void menu_draw() {
+	blend(COPY);
+	target();
+	picosystem::pen(0x00f0);
+	clear();
+	picosystem::sprite(0, 11, 72, 16, 16);
+	if (menupage == 0) {
+		for (auto i = 0; i < mymenu->size(); i++)
+		{
+			if (i == selectedmenuindex) {
+				picosystem::pen(0xFFFF);
+			} else {
+				picosystem::pen(0x54F5);
+			}
+			text(mymenu->at(i).text+settings_to_string(mymenu->at(i).selected), 15, 15 + i * 10);
+		}
+	} else if (menupage == 1) {
+
+	} else if (menupage == 2) { // credits
+		picosystem::pen(0x8df9);
+		text("Celeste", 15, 15);
+		text("Celeste", 16, 15);
+		picosystem::pen(0x54F5);
+		text("by Matt Thorson", 15, 25);
+		text("& Noel Berry", 15, 35);
+		text("Picosystem version", 15, 50);
+		text("by Pixelpunker", 15, 60);
+		text("Uses", 15, 75);
+		text("CCeleste/Lemon32767", 15, 85);
+		text("Picotool/Sanderson", 15, 95);
+		text("Picosystem SDK", 15, 105);
+	}
+}
+
 void init()
 {
 	pico8::init(true);
@@ -1967,15 +2104,15 @@ void update(uint32_t tick)
 		auto target = movetarget.findTarget(playerx);
 		cam.x = target;
 		cam.update();
+	} else {
+			menu_update();
 	}
 
 	if (pressed(Y)) {
 		if (currentgamestate == game) {
-			currentgamestate = menu;
-			spritesheet(mountain);
+			switch_to_menu();
 		} else {
-			currentgamestate = game;
-			spritesheet(pico8::celeste);
+			return_to_game();
 		}
 	}
 }
@@ -1992,19 +2129,6 @@ void draw(uint32_t tick)
 		blend(COPY);
 		blit(pico8::PICO8SCREEN, secondaryCamera(), leveloffsets[level_index()][1], 120, 120, 0, 0);
 	} else {
-		blend(COPY);
-		target();
-		picosystem::pen(0x00f0);
-		clear();
-		picosystem::sprite(0, 11, 72, 16, 16);
-		picosystem::pen(0xFFFF);
-		text("resume", 15, 11);
-		picosystem::pen(0x54F5);
-		text("return to title", 15, 21);
-		text("sound: on", 15, 31);
-		text("autosave: on", 15, 41);
-		text("colors: low", 15, 51);
-		text("scanlines: off", 15, 61);
-		text("credits", 15, 71);
+		menu_draw();
 	}
 }
