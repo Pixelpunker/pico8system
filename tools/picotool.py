@@ -352,7 +352,7 @@ system_palette = [
     '0x98FF' #rgb2(255, 157, 129), # 143 	peach    
 ]
 
-def from_lines(lines, gfxlines, version):
+def read_map(lines, gfxlines, version):
 	"""Create an instance based on .p8 data lines.
 
 	The base implementation reads lines of ASCII-encoded hexadecimal bytes.

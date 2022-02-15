@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 
 # Set your project name here
 set(PROJECT_NAME celeste)
+set(PICO_BOARD pimoroni_picosystem)
 
 # Set your project sources here
 set(PROJECT_SOURCES
@@ -21,13 +22,12 @@ include(pico_sdk_import.cmake)
 # set up project
 project(${PROJECT_NAME} C CXX ASM)
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 
 
 # Initialize the SDK
 pico_sdk_init()
 
-set(PICO_BOARD pimoroni_picosystem)
 
 # Find the PicoSystem library
 include(picosystem_sdk_import.cmake)

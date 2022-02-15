@@ -13,25 +13,26 @@
 * ~~Tile flags on left side~~
 * ~~Sometimes crashes when falling~~
 * Kameraanpassung für HUD Elemente
+* Hintergrund für Zeit oben links größer
 
 ## Features
 
-* **Load gfx**
+* Load gfx
 * Palette support for sprites
 * Palette blend mode (mask+)
 * Palette copy mode (copy+)
 * ~~Load second half of map~~
 * Load sfx
-* Different font
+* ~~Different font~~
 * ~~30 FPS mode~~
 * Sound effects
 * Sound and music on second core
 * ~~Camera system~~
 * ~~Combine cameras~~
-* Menu system
-  * continue
-  * return to title
-  * sound: on/off
+* ~~Menu system~~
+  * ~~continue~~
+  * ~~return to title~~
+  * ~~sound: on/off~~
   * (colors: low/high)
   * (scanlines: on/off)
 * ~~Intro animation~~
