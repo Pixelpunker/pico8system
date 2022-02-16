@@ -12,10 +12,10 @@
 * ~~Celeste moves to the right/left~~
 * ~~Tile flags on left side~~
 * ~~Sometimes crashes when falling~~
-* Kameraanpassung für HUD Elemente
+* ~~Kameraanpassung für HUD Elemente~~
 * ~~Hintergrund für Zeit oben links größer~~
 * Offsets durchgehen links/rechts
-* Button-Event löschen
+* ~~Button-Event löschen~~
 * ~~Double buttons im Startscreen werden nicht abgefragt~~
 
 ## Features

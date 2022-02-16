@@ -61,6 +61,9 @@ using namespace picomath;
 
 number playerx;
 
+int viewportx = 0;
+int viewporty = 0;
+
 typedef enum {
   neutral  = 0,
   left = 1,
@@ -1793,17 +1796,19 @@ static void draw_object(OBJ* obj) {
 	//if (floorf(obj->spr) != obj->spr) printf("?%g %s\n", obj->spr, OBJ_PROP(obj).nam);
 }
 
-static void draw_time(number x, number y) {
-	int s=seconds;
-	int m=minutes%60;
-	int h=minutes/60;
-   
-	pico8::rectfill(x,y,x+32+10,y+6+2,0); // TODO DEBUG
+static void draw_time(number x, number y)
 	{
+	int s = seconds;
+	int m = minutes % 60;
+	int h = minutes / 60;
+
+	x += viewportx - 4;
+	y += viewporty - 4;
+
 		char str[27];
 		snprintf(str, sizeof(str), "%.2i:%.2i:%.2i", h, m, s);
-		pico8::print(str,x+1,y+1,7);
-	}
+	pico8::rectfill(x, y, x + pico8::gettextwidth(str) - 6, y + 8, 0);
+	pico8::print(str, x + 1, y + 1, 7);
 }
 
 // helper functions //
@@ -1929,6 +1934,7 @@ static struct {
 	if (this->target < this->x - 4) {
 		this->x -=1;
 	}
+	viewportx = this->x;
 	};
 } cam = {
 	.x=5,
@@ -2127,7 +2133,9 @@ void draw(uint32_t tick)
 		// pico8::print(to_string(level_index()), 100, 4, 8); // DEBUG
 		target();
 		blend(pico8::CONVERT);
-		blit(pico8::PICO8SCREEN, secondaryCamera(), leveloffsets[level_index()][1], 120, 120, 0, 0);
+		viewportx = secondaryCamera();
+		viewporty = leveloffsets[level_index()][1];
+		blit(pico8::PICO8SCREEN, viewportx, viewporty, 120, 120, 0, 0);
 	} else {
 		menu_draw();
 	}
