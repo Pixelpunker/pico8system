@@ -122,7 +122,43 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
 // uint8_t *_font = (uint8_t *)&_default_font[0][0]
 
   // tip: adjust systemoffset during gameplay
-  static const array<color_t, 32> system_palette = {
+  static array<color_t, 32> system_palette = {
+    //0xGBAR
+      0x0000, //rgb2(0, 0, 0),         // 0 	black (also transparent by default for sprites)
+      0x2511, //rgb2(29, 43, 83),      // 1 	dark-blue
+      0x2527, //rgb2(126, 37, 83),     // 2 	dark-purple
+      0x8530, //rgb2(0, 135, 81),      // 3 	dark-green
+      0x534A, //rgb2(171, 82, 54),     // 4 	brown
+      0x5455, //rgb2(95, 87, 79),      // 5 	dark-grey
+      0xCC6C, //rgb2(194, 195, 199),   // 6 	light-grey
+      0xFE7F, //rgb2(255, 241, 232),   // 7 	white
+      0x048F, //rgb2(255, 0, 77),      // 8 	red
+      0xA09F, //rgb2(255, 163, 0),     // 9	orange
+      0xE2AF, //rgb2(255, 236, 39),    // 10	yellow
+      0xE3B0, //rgb2(0, 228, 54),      // 11 green
+      0xAFC2, //rgb2(41, 173, 255),    // 12 blue
+      0x79D8, //rgb2(131, 118, 156),   // 13 lavender
+      0x7AEF, //rgb2(255, 119, 168),   // 14 pink
+      0xCAFF, //rgb2(255, 204, 170),   // 15 light-peach
+      0x1102, //rgb2(41, 24, 20),    // 128 	brownish-black
+      0x1311, //rgb2(17, 29, 53),    // 129 	darker-blue
+      0x2324, //rgb2(66, 33, 54),    // 130 	darker-purple
+      0x5531, //rgb2(18, 83, 89),    // 131 	blue-green
+      0x2247, //rgb2(116, 47, 41),   // 132 	dark-brown
+      0x3354, //rgb2(73, 51, 59),    // 133 	darker-grey
+      0x876A, //rgb2(162, 136, 121), // 134 	medium-grey
+      0xE77F, //rgb2(243, 239, 125), // 135 	light-yellow
+      0x158B, //rgb2(190, 18, 80),   // 136 	dark-red
+      0x629F, //rgb2(255, 108, 36),  // 137 	dark-orange
+      0xE2AA, //rgb2(168, 231, 46),  // 138 	lime-green
+      0xB4B0, //rgb2(0, 181, 67),    // 139 	medium-green
+      0x5BC0, //rgb2(6, 90, 181),    // 140	true-blue
+      0x46D7, //rgb2(117, 70, 101),  // 141 	mauve
+      0x65EF, //rgb2(255, 110, 89),  // 142 	dark-peach
+      0x98FF //rgb2(255, 157, 129), // 143 	peach
+  };
+  static array<color_t, 32> system_palette2 = {
+    //0xGBAR
       0x00F0, //rgb2(0, 0, 0),         // 0 	black (also transparent by default for sprites)
       0x25F1, //rgb2(29, 43, 83),      // 1 	dark-blue
       0x25F7, //rgb2(126, 37, 83),     // 2 	dark-purple
@@ -156,12 +192,75 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
       0x65FF, //rgb2(255, 110, 89),  // 142 	dark-peach
       0x98FF //rgb2(255, 157, 129), // 143 	peach
   };
-  array<color_t, (uint_fast8_t)16> draw_palette = {
+  array<uint_fast8_t, (uint_fast8_t)16> draw_palette = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
   };
-  array<color_t, (uint_fast8_t)16> secondary_palette = {
+  array<uint_fast8_t, (uint_fast8_t)16> screen_palette = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
   };
+  array<uint_fast8_t, (uint_fast8_t)16> secondary_palette = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+  };
+  array<uint_fast8_t, (uint_fast8_t)16> transparency_palette = {
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+  };
+
+  // copy the source over the destination if source alpha is != 0
+  // allows for faster blitting of sprites that only need 1-bit alpha
+  void SPRITE(color_t *ps, int32_t so, int32_t ss, color_t *pd, uint32_t c)
+  {
+    while (c--)
+    {
+      color_t s = *(ps + (so >> 16));
+      auto index = (s >> 4) & 0x0F;
+
+      // copy if alpha component in transparency palette is opaque
+      if (transparency_palette[index] != 0)
+      {
+        *pd = system_palette[draw_palette[index]];
+      }
+
+      // step destination and source
+      pd++;
+      so += ss;
+    }
+  }
+
+  // copy the source over the destination if source alpha is != 0
+  // allows for faster blitting of sprites that only need 1-bit alpha
+  void PALETTE(color_t *ps, int32_t so, int32_t ss, color_t *pd, uint32_t c)
+  {
+    while (c--)
+    {
+      color_t s = *(ps + (so >> 16));
+      auto index = (s >> 4) & 0x0F;
+
+      *pd = system_palette[draw_palette[index]];
+
+      // step destination and source
+      pd++;
+      so += ss;
+    }
+  }
+
+
+  // copy the source over the destination if source alpha is != 0
+  // allows for faster blitting of sprites that only need 1-bit alpha
+  void CONVERT(color_t *ps, int32_t so, int32_t ss, color_t *pd, uint32_t c)
+  {
+    while (c--)
+    {
+      color_t s = *(ps + (so >> 16));
+      auto index = (s >> 4) & 0x0F;
+
+      *pd = system_palette2[screen_palette[index]];
+
+      // step destination and source
+      pd++;
+      so += ss;
+    }
+  }
+
   bool swapped_buttons = false;
 
   const int picowidth = 136; // workaround for
@@ -180,7 +279,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
  void cls(uint32_t color = 0)
   {
     auto lastpencolor = getCurrentPencolor();
-    pen(draw_palette[color]);
+    pen(system_palette[color]);
     // pen(7,7,7);
   	target();
     clear();
@@ -198,7 +297,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
   // spr implementation. no swapped palettes supported yet.
   void spr(int32_t spriteindex, int32_t x, int32_t y, int32_t cols, int32_t rows, bool flipx, bool flipy)
   {
-    blend(MASK);
+    blend(SPRITE);
     int32_t flags = 0;
     if (!flipx & !flipy)
     {
@@ -218,6 +317,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
     }
     
     sprite(spriteindex, x, y, cols, rows, 8 * cols, 8 * rows, flags);
+    blend(PALETTE);
   }
 
   void spr(number spriteindex, number x, number y, number cols, number rows, bool flipx, bool flipy)
@@ -230,27 +330,32 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
   {
     for (auto i = 0; i < 16; i++)
     {
-      draw_palette[i] = system_palette[i];
-      secondary_palette[i] = system_palette[i];
+      draw_palette[i] = i;
+      screen_palette[i] = i;
+      secondary_palette[i] = i;
+      transparency_palette[i] = i == 0 ? 0 : 1;
     }
   }
 
-  void pal(uint32_t c0, uint32_t c1, uint32_t p = 0)
+  void pal(uint_fast8_t c0, uint_fast8_t c1, uint_fast8_t p = 0)
   {
     switch (p)
     {
     case 0:
     default:
-      draw_palette[c0] = system_palette[c1];
-      draw_palette[c1] = system_palette[c0];
+      draw_palette[c0] = c1;
+      draw_palette[c1] = c0;
       break;
     case 1:
-      // for p = 1 we would need to do a search and replace on the screen buffer but
-      // not on palette indexes but on real 12 bit color values
+      if (c1 >> 4 == 0) { // normal palette
+        screen_palette[c0] = (c1 && 0x0F);
+      } else if (c1 >> 4 == 1) { // secret palette
+        screen_palette[c0] = (c1 && 0x0F) + 16;
+      }
       break;
     case 2:
-      draw_palette[c0] = secondary_palette[c1];
-      draw_palette[c1] = secondary_palette[c0];
+      secondary_palette[c0] = c1;
+      secondary_palette[c1] = c0;
       break;
     }
   }
@@ -264,7 +369,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
   {
     
     auto lastpencolor = getCurrentPencolor();
-    pen(draw_palette[c]);
+    pen(system_palette[c]);
     picosystem::rect(x, y, x2 - x, y2 - y);
     pen(lastpencolor);
   }
@@ -278,7 +383,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
   {
     
     auto lastpencolor = getCurrentPencolor();
-    pen(draw_palette[c]);
+    pen(system_palette[c]);
     frect(x, y, x2 - x, y2 - y);
     pen(lastpencolor);
   }
@@ -364,8 +469,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
 
   void map(uint32_t cell_x = 0, uint32_t cell_y = 0, int32_t sx = 0, int32_t sy = 0, uint32_t cell_w = 128, uint32_t cell_h = 32, uint32_t layers = 0)
   {
-    blend(MASK);
-    
+    blend(SPRITE);
     for (auto x = cell_x; x < cell_w + cell_x; x++)
     {
       for (auto y = cell_y; y < cell_h + cell_y; y++)
@@ -380,6 +484,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
         }
       }
     }
+    blend(PALETTE);
   }
 
   void map(number cell_x = 0, number cell_y = 0, number sx = 0, number sy = 0, number cell_w = 128, number cell_h = 32, number layers = 0)
@@ -439,7 +544,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
     }
     if (c.has_value())
     {
-      pen(draw_palette[c.value()]);
+      pen(system_palette[c.value()]);
     }
     if (startx == endx)
     {
@@ -467,7 +572,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
     
     if (c.has_value())
     {
-      pen(draw_palette[c.value()]);
+      pen(system_palette[c.value()]);
     }
     circle(x, y, r);
     pen(color); // restore previous pen color
@@ -484,7 +589,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
     
     if (c.has_value())
     {
-      pen(draw_palette[c.value()]);
+      pen(system_palette[c.value()]);
     }
     fcircle(x, y, r);
     pen(color); // restore previous pen color
@@ -502,7 +607,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
     
     if (c.has_value())
     {
-      pen(draw_palette[c.value()]);
+      pen(system_palette[c.value()]);
     }
     text(str, x, y);
     pen(color); // restore previous pen color
@@ -523,7 +628,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
     
     if (c.has_value())
     {
-      pen(draw_palette[c.value()]);
+      pen(system_palette[c.value()]);
     }
     text(str, 64 - (gettextwidth(str) / 2), y);
     pen(color); // restore previous pen color
@@ -546,7 +651,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
     
     if (c.has_value())
     {
-      pen(draw_palette[c.value()]);
+      pen(system_palette[c.value()]);
     }
     text(str);
     pen(color); // restore previous pen color
@@ -630,6 +735,8 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
     return btnp((int)b, (int)pl);
   }
 
+
+
   // **********************************************************************************************************************************
   // UNDER CONSTRUCTION SECTION
 
@@ -682,7 +789,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
     
     target(PICO8SCREEN);
 
-    blend(MASK);
+    blend(PALETTE);
     // load spritesheet
     spritesheet(celeste);
     // reset palette

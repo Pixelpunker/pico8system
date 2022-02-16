@@ -1660,12 +1660,12 @@ void Celeste_P8_draw() {
 			c=0;
 		}
 		if (c<10) {
-			pico8::pal(6,c),
-			pico8::pal(12,c);
-			pico8::pal(13,c);
-			pico8::pal(5,c);
-			pico8::pal(1,c);
-			pico8::pal(7,c);
+			pico8::pal(6,c, 1),
+			pico8::pal(12,c, 1);
+			pico8::pal(13,c, 1);
+			pico8::pal(5,c, 1);
+			pico8::pal(1,c, 1);
+			pico8::pal(7,c, 1);
 		}
 	}
 
@@ -1764,7 +1764,7 @@ void Celeste_P8_draw() {
 	if (is_title()) {
 		pico8::center("A+B",80,5);
 		pico8::center("Matt Thorson",96,5);
-		pico8::center("Noel Berry",102,5);
+		pico8::center("Noel Berry",102+2,5);
 	}
    
 	if (level_index()==30) {
@@ -1798,7 +1798,7 @@ static void draw_time(number x, number y) {
 	int m=minutes%60;
 	int h=minutes/60;
    
-	pico8::rectfill(x,y,x+32,y+6,0);
+	pico8::rectfill(x,y,x+32+10,y+6+2,0); // TODO DEBUG
 	{
 		char str[27];
 		snprintf(str, sizeof(str), "%.2i:%.2i:%.2i", h, m, s);
@@ -1985,11 +1985,13 @@ static auto menupage = 0;
 static auto selectedmenuindex = 0;
 
 void return_to_game() {
+	blend(pico8::PALETTE);
 	currentgamestate = game;
 	spritesheet(pico8::celeste);	
 }
 
 void switch_to_menu() {
+	blend(picosystem::COPY);
 	menupage = 0;
 	selectedmenuindex = 0;
 	currentgamestate = menu;
@@ -2051,7 +2053,6 @@ static void menu_update() {
 }
 
 static void menu_draw() {
-	blend(COPY);
 	target();
 	picosystem::pen(0x00f0);
 	clear();
@@ -2121,12 +2122,12 @@ void draw(uint32_t tick)
 {
 	if (currentgamestate == game)
 	{
-		blend(MASK);
+		blend(pico8::PALETTE);
 		target(pico8::PICO8SCREEN);
 		Celeste_P8_draw();
 		// pico8::print(to_string(level_index()), 100, 4, 8); // DEBUG
 		target();
-		blend(COPY);
+		blend(pico8::CONVERT);
 		blit(pico8::PICO8SCREEN, secondaryCamera(), leveloffsets[level_index()][1], 120, 120, 0, 0);
 	} else {
 		menu_draw();

@@ -13,14 +13,18 @@
 * ~~Tile flags on left side~~
 * ~~Sometimes crashes when falling~~
 * Kameraanpassung für HUD Elemente
-* Hintergrund für Zeit oben links größer
+* ~~Hintergrund für Zeit oben links größer~~
+* Offsets durchgehen links/rechts
+* Button-Event löschen
+* ~~Double buttons im Startscreen werden nicht abgefragt~~
 
 ## Features
 
-* Load gfx
-* Palette support for sprites
-* Palette blend mode (mask+)
-* Palette copy mode (copy+)
+* Fadeout für menü
+* ~~Palette blend mode (mask+)~~
+* ~~Palette copy mode (copy+)~~
+* ~~Load gfx~~
+* ~~Palette support for sprites~~
 * ~~Load second half of map~~
 * Load sfx
 * ~~Different font~~
