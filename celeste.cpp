@@ -27,35 +27,35 @@ using namespace picomath;
 	std::array<std::array<int, 3>, 32> leveloffsets {
 		std::array<int, 3> {5, 4, 0}, // 0
 		std::array<int, 3> {5, 4, 0}, // 1
-		std::array<int, 3> {5, 4, 0}, // 2
+		std::array<int, 3> {5, 4, 1}, // 2
 		std::array<int, 3> {5, 4, 1}, // 3
 		std::array<int, 3> {5, 4, 1}, // 4
 		std::array<int, 3> {5, 4, 0}, // 5
 		std::array<int, 3> {5, 4, 0}, // 6
-		std::array<int, 3> {5, 4, 0}, // 7
-		std::array<int, 3> {5, 4, 0}, // 8
+		std::array<int, 3> {5, 4, 1}, // 7
+		std::array<int, 3> {5, 4, 1}, // 8
 		std::array<int, 3> {5, 4, 0}, // 9
-		std::array<int, 3> {5, 6, 0}, // 10
+		std::array<int, 3> {5, 6, 1}, // 10
 		std::array<int, 3> {5, 4, 0}, // 11
-		std::array<int, 3> {5, 4, 0}, // 12
-		std::array<int, 3> {5, 4, 0}, // 13
+		std::array<int, 3> {5, 4, 1}, // 12
+		std::array<int, 3> {5, 4, 1}, // 13
 		std::array<int, 3> {5, 4, 0}, // 14
 		std::array<int, 3> {5, 4, 1}, // 15
-		std::array<int, 3> {5, 4, 0}, // 16
-		std::array<int, 3> {5, 4, 0}, // 17
-		std::array<int, 3> {5, 4, 0}, // 18
+		std::array<int, 3> {5, 4, 1}, // 16
+		std::array<int, 3> {5, 4, 1}, // 17
+		std::array<int, 3> {5, 4, 1}, // 18
 		std::array<int, 3> {5, 4, 1}, // 19
 		std::array<int, 3> {5, 4, 1}, // 20
-		std::array<int, 3> {5, 4, 0}, // 21
+		std::array<int, 3> {5, 4, 1}, // 21
 		std::array<int, 3> {5, 4, 0}, // 22
 		std::array<int, 3> {5, 4, 0}, // 23
-		std::array<int, 3> {5, 2, 0}, // 24
+		std::array<int, 3> {5, 4, 1}, // 24
 		std::array<int, 3> {5, 4, 1}, // 25
 		std::array<int, 3> {5, 4, 1}, // 26
-		std::array<int, 3> {5, 6, 0}, // 27
-		std::array<int, 3> {5, 4, 0}, // 28
-		std::array<int, 3> {5, 6, 0}, // 29
-		std::array<int, 3> {5, 8, 1}, // 30
+		std::array<int, 3> {5, 4, 1}, // 27
+		std::array<int, 3> {5, 4, 1}, // 28
+		std::array<int, 3> {5, 6, 1}, // 29
+		std::array<int, 3> {5, 8, 0}, // 30
 		std::array<int, 3> {5, 4, 0} // 31 (Title screen)
 };
 
