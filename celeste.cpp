@@ -583,7 +583,7 @@ static void PLAYER_update(OBJ* this) {
 		init_object(OBJ_SMOKE,this->x,this->y+4);
 	}
 
-	bool jump = pico8::btn(k_jump) && !this->p_jump;
+	bool jump = pico8::btnp(k_jump) && !this->p_jump;
 	this->p_jump = pico8::btn(k_jump);
 	if ((jump)) {
 		this->jbuffer=4;
@@ -591,7 +591,7 @@ static void PLAYER_update(OBJ* this) {
 		this->jbuffer-=1;
 	}
    
-	bool dash = pico8::btn(k_dash) && !this->p_dash;
+	bool dash = pico8::btnp(k_dash) && !this->p_dash;
 	this->p_dash = pico8::btn(k_dash);
    
 	if (on_ground) {
@@ -1622,7 +1622,7 @@ void Celeste_P8_update() {
    
 	// start game
 	if (is_title()) {
-		if (!start_game && (pico8::btn(k_jump) || pico8::btn(k_dash))) {
+		if (!start_game && (pico8::btnp(k_jump) || pico8::btnp(k_dash))) {
 			pico8::music(-1, 0, 0);
 			start_game_flash=50;
 			start_game=true;
@@ -1997,7 +1997,6 @@ void switch_to_menu() {
 	currentgamestate = menu;
 	spritesheet(mountain);
 }
-
 
 static auto mymenu = new vector<menuentry>{{.text = "resume",
 																		 .selected = none,
