@@ -7,7 +7,7 @@ converted = read_map(data.section_lines['map'],
 	data.section_lines['gfx'], 
 	version=data.version)
 
-gfx = from_lines(data.section_lines['gfx'], data.version)
+gfx = gfx_lines(data.section_lines['gfx'], data.version)
 converted = converted + "\n" + gfx
 file1 = open("assets/"+filename, "w")
 file1.write(converted)
