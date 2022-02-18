@@ -11,12 +11,13 @@ using namespace picomath;
 
 // API wrapper from PICO-8 API to picosystem API calls
 
-// todo make a static class to hide some stuff from users of pico8 api and omit init method
 namespace pico8
 {
   color_t rgb2(uint16_t r, uint16_t g, uint16_t b, uint16_t a = 0xFF) { // PicoSystem only accepts 4 bit color values (0-15)
     return rgb(r/16, g/16, b/16, a/16);
   }
+
+  static bool soundoff = false;
 
   const uint8_t _minimal_font_data[96][9] = {
   {4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, //  
@@ -119,9 +120,6 @@ namespace pico8
 
 uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
 
-// uint8_t *_font = (uint8_t *)&_default_font[0][0]
-
-  // tip: adjust systemoffset during gameplay
   static array<color_t, 32> system_palette = {
     //0xGBAR
       0x0000, //rgb2(0, 0, 0),         // 0 	black (also transparent by default for sprites)
@@ -192,21 +190,22 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
       0x65FF, //rgb2(255, 110, 89),  // 142 	dark-peach
       0x98FF //rgb2(255, 157, 129), // 143 	peach
   };
-  array<uint_fast8_t, (uint_fast8_t)16> draw_palette = {
+  static array<uint_fast8_t, (uint_fast8_t)16> draw_palette = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
   };
-  array<uint_fast8_t, (uint_fast8_t)16> screen_palette = {
+  static array<uint_fast8_t, (uint_fast8_t)16> screen_palette = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
   };
-  array<uint_fast8_t, (uint_fast8_t)16> secondary_palette = {
+  static array<uint_fast8_t, (uint_fast8_t)16> secondary_palette = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
   };
-  array<uint_fast8_t, (uint_fast8_t)16> transparency_palette = {
+  static array<uint_fast8_t, (uint_fast8_t)16> transparency_palette = {
     0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
   };
 
-  // copy the source over the destination if source alpha is != 0
-  // allows for faster blitting of sprites that only need 1-bit alpha
+  // copy the source over the destination only if source color index has
+  // opacity set in transparency palette
+  // copy using draw palette ignorierung actual rgb values
   void SPRITE(color_t *ps, int32_t so, int32_t ss, color_t *pd, uint32_t c)
   {
     while (c--)
@@ -226,8 +225,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
     }
   }
 
-  // copy the source over the destination if source alpha is != 0
-  // allows for faster blitting of sprites that only need 1-bit alpha
+  // copy using draw palette ignorierung actual rgb values
   void PALETTE(color_t *ps, int32_t so, int32_t ss, color_t *pd, uint32_t c)
   {
     while (c--)
@@ -244,8 +242,8 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
   }
 
 
-  // copy the source over the destination if source alpha is != 0
-  // allows for faster blitting of sprites that only need 1-bit alpha
+  // copy using screen palette ignorierung actual rgb values
+  // and converting to normal rgba values for other picosystem effects
   void CONVERT(color_t *ps, int32_t so, int32_t ss, color_t *pd, uint32_t c)
   {
     while (c--)
@@ -268,11 +266,8 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
   color_t _fdp[picowidth * picowidth] __attribute__ ((aligned (4))) = { };
   static buffer_t *PICO8SCREEN = buffer(picowidth, picowidth, _fdp);
 
-  
-  // rnd() // clever me uses the current battery voltage as a random seed.
-
   color_t getCurrentPencolor()
-  { // actually we should not access 'private' variables from the picosystem namespace
+  { 
     return _pen;
   }
 
@@ -294,7 +289,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
     cls((int)color);
   }
 
-  // spr implementation. no swapped palettes supported yet.
+  // spr implementation.
   void spr(int32_t spriteindex, int32_t x, int32_t y, int32_t cols, int32_t rows, bool flipx, bool flipy)
   {
     blend(SPRITE);
@@ -419,8 +414,6 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
     return result;
   }
 
-  //todo NUR fget/set kopieren, und alle uint32_t durch uint_fast16_t ersetzen,
-  //auch in meinem custom number type
   int32_t fget(uint32_t n)
   {
     return sprite_flags[n];
@@ -475,9 +468,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
       for (auto y = cell_y; y < cell_h + cell_y; y++)
       {
         auto tileindex = map_data[x + y * 128];
-        // if (layers == 0 || sprite_flags[tileindex] == 4 || gettileflag(tileindex, layers != 4 ? layers-1 : layers))
         auto masked = sprite_flags[tileindex] | layers;
-        // if (layers == 0 || (layers == 4 && sprite_flags[tileindex] == 4) || fget(tileindex, layers != 4 ? layers-1 : layers))
         if (layers == 0 || masked == sprite_flags[tileindex])
         {
           sprite(tileindex, sx + (x * 8 - cell_x * 8), sy + (y * 8 - cell_y * 8));
@@ -740,19 +731,6 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
   // **********************************************************************************************************************************
   // UNDER CONSTRUCTION SECTION
 
-  // Note: with the exception of map data and user-defined data
-  // it is probably best not to reimplement all the peek and poke
-  // trickery of the fantasy console but to change the source code
-  // of the game to achieve things using the picosystem api directly.
-  //
-  // GFX
-  // Specifically the gfx portion cannot be accessed because
-  // picosystem stores the spritesheet as rgb colors (4096 possible colors)
-  // plus 16 levels of transparency while pico8 uses a fixed 16 color palette of
-  // which one color can be defined as transparent. we can convert from pico8
-  // to picosystem but not vice versa.
-  // living in picosystem land enables more colors and the different blend effects.
-  //
   // The intention of the pico8 compatibility layer is to aid in the porting
   // of pico-8 carts that can be enhanced even further, not to be an automatic
   // pico-8 runtime.
@@ -760,14 +738,15 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
   {
   }
 
-  // TODO implement sfx
-  // dummy function to be implemented
   void sfx(uint32_t n, uint32_t channel = 0, uint32_t offset = 0, uint32_t length = 255)
   {
+    if (soundoff) {
+      return;
+    }
   }
 
-  // TODO implement music
-  // dummy function to be implemented
+  // music will not be implemented because it would sound like crap anyway
+  // with only one channel and only one waveform
   void music(int32_t n, uint32_t fade_len = 0, uint32_t channel_mask = 15)
   {
   }
@@ -790,9 +769,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
     target(PICO8SCREEN);
 
     blend(PALETTE);
-    // load spritesheet
     spritesheet(celeste);
-    // reset palette
     pal();
   }
 

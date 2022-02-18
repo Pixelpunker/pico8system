@@ -14,22 +14,22 @@
 * ~~Sometimes crashes when falling~~
 * ~~Kameraanpassung für HUD Elemente~~
 * ~~Hintergrund für Zeit oben links größer~~
-* Offsets durchgehen links/rechts
+* ~~Offsets durchgehen links/rechts~~
 * ~~Button-Event löschen~~
 * ~~Double buttons im Startscreen werden nicht abgefragt~~
 
 ## Features
 
-* Fadeout für menü
+* **Load sfx**
+* Sound effects
+* ~~Fadeout für menü~~
 * ~~Palette blend mode (mask+)~~
 * ~~Palette copy mode (copy+)~~
 * ~~Load gfx~~
 * ~~Palette support for sprites~~
 * ~~Load second half of map~~
-* Load sfx
 * ~~Different font~~
 * ~~30 FPS mode~~
-* Sound effects
 * Sound and music on second core
 * ~~Camera system~~
 * ~~Combine cameras~~
@@ -37,23 +37,50 @@
   * ~~continue~~
   * ~~return to title~~
   * ~~sound: on/off~~
-  * (colors: low/high)
-  * (scanlines: on/off)
 * ~~Intro animation~~
 
 ## Später
 
+* Versuchen, Importe rauszuwerfen
+*  // rnd() // clever me uses the current battery voltage as a random seed.
+* actually we should not access 'private' variables from the picosystem namespace
+  * getpen
+  * getcamera
+  * getblendmode
+* todo make a static class to hide some stuff from users of pico8 api and omit init method
+* todo NUR fget/set kopieren, und alle uint32_t durch uint_fast16_t ersetzen,
+  auch in meinem custom number type
+* Effizientere Blendmodes
+* Load sprite flags
+* small / big spritesheet / map mode & vice versa. spritesheet, spriteflags doppelt groß, map nur hälfte und umgekehrt
+* Statistiktest
+* Hudcamera-Offset
 * Test der Funktionen rand, P8Floor und dem Ergebnis von / in Bezug auf number statt float
 * Workaround für out of buffer durch richtige Lösung ersetzen (sollte Hintergrundfarbe liefern, wenn außerhalb des Grafikspeichers gelesen wird)
 
 ## Version 1.0
 
+* Menu system
+  * (colors: low/high)
+  * (scanlines: on/off)
 * Flash file system support für PicoSystem SDK
-* Save state
+* Alle 400 m checkpoint wenn alle vorherigen Beeren gesammelt wurden
+  * 500 m
+  * 500 m (checkpoint)
+  * return to title fängt dann von vorne an
+  * kann in den settings ausgeschaltet werden
 * Flash save support
 * Run export script during build
-* High color mode
-* Leuchtende Beeren
+* High color mode?
+* Leuchtende Beeren?
 * Scanlines
-* B-Sides Level, nach Komplettieren von Level 8 oder Sammeln von x Beeren
+* 60 FPS Modus mit gleicher Geschwindigkeit
+* B-Sides Level, nach Komplettieren von Level 16 oder Sammeln von 8 Beeren
   * heimlich starten durch X+Y statt A+B
+
+## Marketing
+* Celeste now runs at 60 FPS (smoother, not faster)
+* Checkpoint system: If you collect all the berries every 400 m a checkpoint will be unlocked
+* Masters of the game can now unlock the b-sides with 31 more challenging levels!
+
+All that running on a tiny 1 $ chip.

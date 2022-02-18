@@ -90,10 +90,10 @@ static struct {
 		return direction;
 	};
 	int findTarget(number playerx) {
-		auto target = 0;
-		if (playerx >=0 and playerx < 42) { target = this->target1; }
-		if (playerx >=42 and playerx < 86) { target = this->target2; }
-		if (playerx >= 86) { target = this->target3; }
+		auto target = 0; // 40 - 48 - 40 px regions
+		if (playerx >=0 and playerx <= 39) { target = this->target1; }
+		if (playerx >39 and playerx <= 86) { target = this->target2; }
+		if (playerx > 86) { target = this->target3; }
 		return target;
 	};
 	} movetarget = {.x0=0,.x1=0,.target1=0,.target2=5,.target3=9}; 
@@ -155,7 +155,7 @@ static inline bool solid_at(number x,number y,number w,number h) { return solid_
 ////////////////////////////////////////////////
 
 // ~celeste~
-// matt thorson + noel berry
+// maddy thorson + noel berry
 
 // globals
 //////////////
@@ -164,7 +164,6 @@ typedef struct {number x,y;} VEC;
 typedef struct {int x,y;} VECI;
 
 static VECI room = {.x=0,.y=0};
-//static int num_objects = 0;
 static int freeze = 0;
 static int shake = 0;
 static bool will_restart = false;
@@ -1616,7 +1615,7 @@ void Celeste_P8_update() {
 		 *       over this index again. thus for example, the player is in slot N before a new room is loaded,
 		 *       all objects are deleted and new objects are spawned, and the objects now in slots [N, last] are updated
 		 */
-		if (this_id != obj->id) {
+		if (this_id != obj->id) {	
 			goto redo_update_slot;
 		}
 
@@ -1766,7 +1765,7 @@ void Celeste_P8_draw() {
 // credits
 	if (is_title()) {
 		pico8::center("A+B",80,5);
-		pico8::center("Matt Thorson",96,5);
+		pico8::center("Maddy Thorson",96,5);
 		pico8::center("Noel Berry",102+2,5);
 	}
    
@@ -1989,6 +1988,8 @@ typedef struct {
 
 static auto menupage = 0;
 static auto selectedmenuindex = 0;
+static auto menutime = 0;
+static uint_fast8_t backlightlevel = 75;
 
 void return_to_game() {
 	blend(pico8::PALETTE);
@@ -1997,6 +1998,7 @@ void return_to_game() {
 }
 
 void switch_to_menu() {
+	menutime = time();
 	blend(picosystem::COPY);
 	menupage = 0;
 	selectedmenuindex = 0;
@@ -2029,7 +2031,7 @@ static void menu_update() {
 			selectedmenuindex--;
 		}
 	} else if (pressed(DOWN)) {
-		if (selectedmenuindex < mymenu->size()) {
+		if (selectedmenuindex < mymenu->size() - 1) {
 			selectedmenuindex++;
 		}
 	} 
@@ -2055,9 +2057,18 @@ static void menu_update() {
 			selectedmenuindex = 0;
 		}
 	}
+
+	if (button(A) || button(B) || button(X) || button(Y) || button(LEFT) || button(RIGHT) || button(UP) || button(DOWN)) {
+		menutime = time();
+		backlightlevel = 75;
+	}
+	if (time() - menutime > 1000 * 20 && backlightlevel > 0) {
+		backlightlevel--;
+	}
 }
 
 static void menu_draw() {
+	picosystem::backlight(backlightlevel);
 	target();
 	picosystem::pen(0x00f0);
 	clear();
@@ -2079,7 +2090,7 @@ static void menu_draw() {
 		text("Celeste", 15, 15);
 		text("Celeste", 16, 15);
 		picosystem::pen(0x54F5);
-		text("by Matt Thorson", 15, 25);
+		text("by Maddy Thorson", 15, 25);
 		text("& Noel Berry", 15, 35);
 		text("Picosystem version", 15, 50);
 		text("by Pixelpunker", 15, 60);
@@ -2114,7 +2125,7 @@ void update(uint32_t tick)
 			menu_update();
 	}
 
-	if (pressed(Y)) {
+	if (pressed(Y) && !is_title()) {
 		if (currentgamestate == game) {
 			switch_to_menu();
 		} else {
@@ -2130,7 +2141,6 @@ void draw(uint32_t tick)
 		blend(pico8::PALETTE);
 		target(pico8::PICO8SCREEN);
 		Celeste_P8_draw();
-		// pico8::print(to_string(level_index()), 100, 4, 8); // DEBUG
 		target();
 		blend(pico8::CONVERT);
 		viewportx = secondaryCamera();
@@ -2139,4 +2149,13 @@ void draw(uint32_t tick)
 	} else {
 		menu_draw();
 	}
+	// blend(picosystem::COPY); // DEBUG
+	// auto drawstat = stats.draw_us/100; // DEBUG
+	// auto updatestat = stats.update_us/100; // DEBUG
+	// auto combined = drawstat + updatestat; // DEBUG
+	// pen(15, 0, 0); // DEBUG
+	// text("fps: " + str(stats.fps), 60, 86); // DEBUG
+  // text("draw: " + str(drawstat), 60, 94); // DEBUG
+  // text("update: " + str(updatestat), 60, 102); // DEBUG
+  // text("combined: " + str(combined), 60, 110); // DEBUG
 }
