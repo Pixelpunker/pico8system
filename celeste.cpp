@@ -2024,46 +2024,63 @@ static auto mymenu = new vector<menuentry>{{.text = "resume",
 																		 .a_button_action = []() { menupage = 2; }}
 																		 };
 
-
-static void menu_update() {
-	if (pressed(UP)) {
-		if (selectedmenuindex > 0) {
-			selectedmenuindex--;
-		}
-	} else if (pressed(DOWN)) {
-		if (selectedmenuindex < mymenu->size() - 1) {
-			selectedmenuindex++;
-		}
-	} 
-	else if (pressed(LEFT)) {
-		 mymenu->at(selectedmenuindex).selected = mymenu->at(selectedmenuindex).settings->front();
-	} 
-	else if (pressed(RIGHT)) {
-		 mymenu->at(selectedmenuindex).selected = mymenu->at(selectedmenuindex).settings->back();
-	}
-	if (pressed(A)) {
-		if (menupage == 0) {
-			mymenu->at(selectedmenuindex).a_button_action();
-		} else if (menupage == 2) {
-			menupage = 0;
-			selectedmenuindex = 0;
-		}
-	}
-	if (pressed(B)) {
-		if (menupage == 0) {
-			return_to_game();
-		} else if (menupage == 2) {
-			menupage = 0;
-			selectedmenuindex = 0;
-		}
-	}
-
-	if (button(A) || button(B) || button(X) || button(Y) || button(LEFT) || button(RIGHT) || button(UP) || button(DOWN)) {
+static void menu_update()
+{
+	if (button(A) || button(B) || button(X) || button(Y) || button(LEFT) || button(RIGHT) || button(UP) || button(DOWN))
+	{
 		menutime = time();
 		backlightlevel = 75;
 	}
-	if (time() - menutime > 1000 * 20 && backlightlevel > 0) {
+	if (time() - menutime > 1000 * 20 && backlightlevel > 0)
+	{
 		backlightlevel--;
+	}
+
+	if (pressed(UP))
+	{
+		if (selectedmenuindex > 0)
+		{
+			selectedmenuindex--;
+		}
+	}
+	else if (pressed(DOWN))
+	{
+		if (selectedmenuindex < mymenu->size() - 1)
+		{
+			selectedmenuindex++;
+		}
+	}
+	else if (pressed(LEFT))
+	{
+		mymenu->at(selectedmenuindex).selected = mymenu->at(selectedmenuindex).settings->front();
+	}
+	else if (pressed(RIGHT))
+	{
+		mymenu->at(selectedmenuindex).selected = mymenu->at(selectedmenuindex).settings->back();
+	}
+	else if (pressed(A))
+	{
+		if (menupage == 0)
+		{
+			mymenu->at(selectedmenuindex).a_button_action();
+		}
+		else if (menupage == 2)
+		{
+			menupage = 0;
+			selectedmenuindex = 0;
+		}
+	}
+	else if (pressed(B))
+	{
+		if (menupage == 0)
+		{
+			return_to_game();
+		}
+		else if (menupage == 2)
+		{
+			menupage = 0;
+			selectedmenuindex = 0;
+		}
 	}
 }
 
