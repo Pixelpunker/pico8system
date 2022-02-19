@@ -190,6 +190,16 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
       0x65FF, //rgb2(255, 110, 89),  // 142 	dark-peach
       0x98FF //rgb2(255, 157, 129), // 143 	peach
   };
+  static array<color_t, 3> raspberry_system_palette = {
+    //0xGBAR
+      0x05FA, // lightest raspberry
+      0x04F8, // light raspberry
+      0x03F6, // raspberry
+  }
+  // 9 --> 0 8 --> 1 2 --> 2
+  static array<uint_fast8_t, (uint_fast8_t)16> raspberry_draw_palette = {
+    0, 1, 2, 3, 4, 5, 6, 7, 1, 0, 10, 11, 12, 13, 14, 15
+  };
   static array<uint_fast8_t, (uint_fast8_t)16> draw_palette = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
   };
@@ -224,6 +234,27 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
       so += ss;
     }
   }
+
+  // special recolorization of the strawberry to raspberry
+  void RASPBERRY(color_t *ps, int32_t so, int32_t ss, color_t *pd, uint32_t c)
+  {
+    while (c--)
+    {
+      color_t s = *(ps + (so >> 16));
+      auto index = (s >> 4) & 0x0F;
+
+      // copy if alpha component in transparency palette is opaque
+      if (transparency_palette[index] != 0)
+      {
+        *pd = raspberry_system_palette[raspberry_draw_palette[index]];
+      }
+
+      // step destination and source
+      pd++;
+      so += ss;
+    }
+  }
+
 
   // copy using draw palette ignorierung actual rgb values
   void PALETTE(color_t *ps, int32_t so, int32_t ss, color_t *pd, uint32_t c)
@@ -738,15 +769,22 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
   {
   }
 
+// sfx struct to access sfx data
+
+
+// play object
+
   void sfx(uint32_t n, uint32_t channel = 0, uint32_t offset = 0, uint32_t length = 255)
   {
     if (soundoff) {
       return;
     }
+    // create sfx struct
+    // create play object with sfx struct
   }
 
   // music will not be implemented because it would sound like crap anyway
-  // with only one channel and only one waveform
+  // with the piezo speaker,  only one channel and waveform
   void music(int32_t n, uint32_t fade_len = 0, uint32_t channel_mask = 15)
   {
   }
