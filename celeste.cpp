@@ -1992,13 +1992,15 @@ static auto menutime = 0;
 static uint_fast8_t backlightlevel = 75;
 
 static void return_to_game() {
+	backlightlevel = 75;
+	picosystem::backlight(backlightlevel);
 	blend(pico8::PALETTE);
 	currentgamestate = game;
 	spritesheet(pico8::celeste);	
 }
 
 static void switch_to_menu() {
-	menutime = time();
+	menutime = time(); backlightlevel = 75;
 	blend(picosystem::COPY);
 	menupage = 0;
 	selectedmenuindex = 0;
@@ -2065,13 +2067,11 @@ static void menu_update()
 {
 	if (button(A) || button(B) || button(X) || button(Y) || button(LEFT) || button(RIGHT) || button(UP) || button(DOWN))
 	{
-		menutime = time();
+		menutime = time(); backlightlevel = 75;
 	}
 	if (time() - menutime > 1000 * 20 && backlightlevel > 0)
 	{
 		backlightlevel--;
-	} else {
-		backlightlevel = 75;
 	}
 
 	if (pressed(UP))
@@ -2100,24 +2100,20 @@ static void menu_update()
 	{
 		if (menupage == 0)
 		{
-			menutime = time();
 			menu1->at(selectedmenuindex).a_button_action();
 		}
 		else if (menupage == 1)
 		{
-			menutime = time();
 			menu2->at(selectedmenuindex).a_button_action();
 		}
 		else if (menupage == 2)
 		{
-			menutime = time();
 			menupage = 0;
 			selectedmenuindex = 0;
 		}
 	}
 	else if (pressed(B))
 	{
-		menutime = time();
 		if (menupage == 0)
 		{
 			return_to_game();
@@ -2215,7 +2211,7 @@ void init()
 void update(uint32_t tick)
 {
 	if (currentgamestate == game)
-	{
+	{  
 		Celeste_P8_update();
 		auto direction = movetarget.findDirection(playerx);
 		if (direction == left)
