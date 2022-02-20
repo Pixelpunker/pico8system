@@ -1957,8 +1957,8 @@ enum setting{
 	none,
 	off,
 	on,
-	low,
-	high
+	strawberry,
+	raspberry
 };
 
 static string settings_to_string(setting setting) {
@@ -1970,10 +1970,10 @@ static string settings_to_string(setting setting) {
 		return ": off";
 	case on:
 		return ": on";
-	case low:
-		return ": low";
-	case high:
-		return ": high";
+	case strawberry:
+		return ": strawberry";
+	case raspberry:
+		return ": raspberry";
 	default:
 		return "";
 	}
@@ -1991,13 +1991,13 @@ static auto selectedmenuindex = 0;
 static auto menutime = 0;
 static uint_fast8_t backlightlevel = 75;
 
-void return_to_game() {
+static void return_to_game() {
 	blend(pico8::PALETTE);
 	currentgamestate = game;
 	spritesheet(pico8::celeste);	
 }
 
-void switch_to_menu() {
+static void switch_to_menu() {
 	menutime = time();
 	blend(picosystem::COPY);
 	menupage = 0;
@@ -2006,34 +2006,72 @@ void switch_to_menu() {
 	spritesheet(mountain);
 }
 
-static auto mymenu = new vector<menuentry>{{.text = "resume",
-																		 .selected = none,
-																		 .settings = new vector<setting>{none},
-																		 .a_button_action = return_to_game},
-																		 {.text = "return to title",
-																		 .selected = none,
-																		 .settings = new vector<setting>{none},
-																		 .a_button_action = init},
-																		 {.text = "sound",
-																		 .selected = on,
-																		 .settings = new vector<setting>{off, on},
-																		 .a_button_action = []() {}},
-																		 {.text = "credits",
-																		 .selected = none,
-																		 .settings = new vector<setting>{none},
-																		 .a_button_action = []() { menupage = 2; }}
-																		 };
+static auto menu1 = new vector<menuentry>{
+	{.text = "resume",
+	.selected = none,
+	.settings = new vector<setting>{none},
+	.a_button_action = return_to_game},
+
+	{.text = "return to title",
+	.selected = none,
+	.settings = new vector<setting>{none},
+	.a_button_action = init},
+
+	{.text = "options",
+	.selected = none,
+	.settings = new vector<setting>{none},
+	.a_button_action = []() { menupage = 1; selectedmenuindex = 0; }},
+
+	{.text = "credits",
+	.selected = none,
+	.settings = new vector<setting>{none},
+	.a_button_action = []() { menupage = 2; selectedmenuindex = 0; }}
+	};
+static auto menu2 = new vector<menuentry>{
+	{.text = "back",
+	.selected = none,
+	.settings = new vector<setting>{none},
+	.a_button_action = []() { menupage = 0; selectedmenuindex = 0;}},
+	
+	{.text = "sound",
+	.selected = on,
+	.settings = new vector<setting>{off, on},
+	.a_button_action = []() {}},	
+
+	{.text = "fruit",
+	.selected = raspberry,
+	.settings = new vector<setting>{strawberry, raspberry},
+	.a_button_action = []() {}}
+	};
+
+static void restoresettings() {
+	if (pico8::soundoff == false) {
+		menu2->at(1).selected = on;
+	}
+	if (pico8::soundoff == true) {
+		menu2->at(1).selected = off;
+	}
+	if (pico8::berries == 0) {
+		menu2->at(2).selected = strawberry;
+		pico8::high_color_mode = false;
+	}
+	if (pico8::berries == 1) {
+		menu2->at(2).selected = raspberry;
+		pico8::high_color_mode = true;
+	}
+}
 
 static void menu_update()
 {
 	if (button(A) || button(B) || button(X) || button(Y) || button(LEFT) || button(RIGHT) || button(UP) || button(DOWN))
 	{
 		menutime = time();
-		backlightlevel = 75;
 	}
 	if (time() - menutime > 1000 * 20 && backlightlevel > 0)
 	{
 		backlightlevel--;
+	} else {
+		backlightlevel = 75;
 	}
 
 	if (pressed(UP))
@@ -2045,42 +2083,69 @@ static void menu_update()
 	}
 	else if (pressed(DOWN))
 	{
-		if (selectedmenuindex < mymenu->size() - 1)
+		if (selectedmenuindex < menu1->size() - 1)
 		{
 			selectedmenuindex++;
 		}
 	}
 	else if (pressed(LEFT))
 	{
-		mymenu->at(selectedmenuindex).selected = mymenu->at(selectedmenuindex).settings->front();
+		menu2->at(selectedmenuindex).selected = menu2->at(selectedmenuindex).settings->front();
 	}
 	else if (pressed(RIGHT))
 	{
-		mymenu->at(selectedmenuindex).selected = mymenu->at(selectedmenuindex).settings->back();
+		menu2->at(selectedmenuindex).selected = menu2->at(selectedmenuindex).settings->back();
 	}
 	else if (pressed(A))
 	{
 		if (menupage == 0)
 		{
-			mymenu->at(selectedmenuindex).a_button_action();
+			menutime = time();
+			menu1->at(selectedmenuindex).a_button_action();
+		}
+		else if (menupage == 1)
+		{
+			menutime = time();
+			menu2->at(selectedmenuindex).a_button_action();
 		}
 		else if (menupage == 2)
 		{
+			menutime = time();
 			menupage = 0;
 			selectedmenuindex = 0;
 		}
 	}
 	else if (pressed(B))
 	{
+		menutime = time();
 		if (menupage == 0)
 		{
 			return_to_game();
+		}
+		else if (menupage == 1)
+		{
+			menupage = 0;
+			selectedmenuindex = 0;
 		}
 		else if (menupage == 2)
 		{
 			menupage = 0;
 			selectedmenuindex = 0;
 		}
+	}
+	if (menu2->at(1).selected == on) {
+		pico8::soundoff == false;
+	}
+	if (menu2->at(1).selected == off) {
+		pico8::soundoff == true;
+	}
+	if (menu2->at(2).selected == strawberry) {
+		pico8::berries = 0;
+		pico8::high_color_mode = false;
+	}
+	if (menu2->at(2).selected == raspberry) {
+		pico8::berries = 1;
+		pico8::high_color_mode = true;
 	}
 }
 
@@ -2094,7 +2159,7 @@ static void menu_draw()
 	picosystem::sprite(56, 19, 112, 1, 1);
 	if (menupage == 0)
 	{
-		for (auto i = 0; i < mymenu->size(); i++)
+		for (auto i = 0; i < menu1->size(); i++)
 		{
 			if (i == selectedmenuindex)
 			{
@@ -2104,11 +2169,23 @@ static void menu_draw()
 			{
 				picosystem::pen(0x54F5);
 			}
-			text(mymenu->at(i).text + settings_to_string(mymenu->at(i).selected), 15, 15 + i * 10);
+			text(menu1->at(i).text + settings_to_string(menu1->at(i).selected), 15, 15 + i * 10);
 		}
 	}
 	else if (menupage == 1)
 	{
+		for (auto i = 0; i < menu2->size(); i++)
+		{
+			if (i == selectedmenuindex)
+			{
+				picosystem::pen(0xFFFF);
+			}
+			else
+			{
+				picosystem::pen(0x54F5);
+			}
+			text(menu2->at(i).text + settings_to_string(menu2->at(i).selected), 15, 15 + i * 10);
+		}
 	}
 	else if (menupage == 2)
 	{ // credits
@@ -2130,6 +2207,7 @@ static void menu_draw()
 void init()
 {
 	pico8::init(true);
+	restoresettings();
 	currentgamestate = game;
 	Celeste_P8_init();
 }
