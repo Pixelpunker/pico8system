@@ -27,7 +27,7 @@ using namespace picomath;
 	std::array<std::array<int, 3>, 32> leveloffsets {
 		std::array<int, 3> {5, 4, 0}, // 0
 		std::array<int, 3> {5, 4, 0}, // 1
-		std::array<int, 3> {5, 4, 1}, // 2
+		std::array<int, 3> {5, 4, 0}, // 2
 		std::array<int, 3> {5, 4, 1}, // 3
 		std::array<int, 3> {5, 4, 1}, // 4
 		std::array<int, 3> {5, 4, 0}, // 5
@@ -2084,25 +2084,34 @@ static void menu_update()
 	}
 }
 
-static void menu_draw() {
+static void menu_draw()
+{
 	picosystem::backlight(backlightlevel);
 	target();
 	picosystem::pen(0x00f0);
 	clear();
-	picosystem::sprite(0, 11, 72, 16, 16);
-	if (menupage == 0) {
+	picosystem::sprite(2, 27, 72, 10, 7);
+	picosystem::sprite(56, 19, 112, 1, 1);
+	if (menupage == 0)
+	{
 		for (auto i = 0; i < mymenu->size(); i++)
 		{
-			if (i == selectedmenuindex) {
+			if (i == selectedmenuindex)
+			{
 				picosystem::pen(0xFFFF);
-			} else {
+			}
+			else
+			{
 				picosystem::pen(0x54F5);
 			}
-			text(mymenu->at(i).text+settings_to_string(mymenu->at(i).selected), 15, 15 + i * 10);
+			text(mymenu->at(i).text + settings_to_string(mymenu->at(i).selected), 15, 15 + i * 10);
 		}
-	} else if (menupage == 1) {
-
-	} else if (menupage == 2) { // credits
+	}
+	else if (menupage == 1)
+	{
+	}
+	else if (menupage == 2)
+	{ // credits
 		picosystem::pen(0x8df9);
 		text("Celeste", 15, 15);
 		text("Celeste", 16, 15);
@@ -2166,13 +2175,16 @@ void draw(uint32_t tick)
 	} else {
 		menu_draw();
 	}
+
+	// Start Debug stats
+	//
 	// blend(picosystem::COPY); // DEBUG
 	// auto drawstat = stats.draw_us/100; // DEBUG
 	// auto updatestat = stats.update_us/100; // DEBUG
 	// auto combined = drawstat + updatestat; // DEBUG
 	// pen(15, 0, 0); // DEBUG
 	// text("fps: " + str(stats.fps), 60, 86); // DEBUG
-  // text("draw: " + str(drawstat), 60, 94); // DEBUG
-  // text("update: " + str(updatestat), 60, 102); // DEBUG
-  // text("combined: " + str(combined), 60, 110); // DEBUG
+  	// text("draw: " + str(drawstat), 60, 94); // DEBUG
+  	// text("update: " + str(updatestat), 60, 102); // DEBUG
+  	// text("combined: " + str(combined), 60, 110); // DEBUG
 }

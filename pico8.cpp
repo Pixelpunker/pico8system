@@ -197,9 +197,12 @@ namespace pico8
   static array<uint_fast8_t, (uint_fast8_t)16> transparency_palette = {
       0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
   static bool high_color_mode = true;
-  static uint_fast8_t dontmap = 3; // seems like color 3 is never remapped
+  static uint_fast8_t dontmap = 3; // seems like color 3 is never remapped (Alpha 48)
   static uint_fast8_t berries = 1;
   static bool soundoff = false;
+
+  auto mountain = buffer(95, 48, mountaindata);
+  auto celeste = buffer(128, 64, spritedata);
 
   // copy the source over the destination only if source color index has
   // opacity set in transparency palette
@@ -233,7 +236,7 @@ namespace pico8
         if (index == dontmap)
         {
           // copy if not black
-          if (s & 0xFF0F != 0x0000)
+          if ((s & 0xFF0F) != 0x0000)
           {
             *pd = s;
           }
@@ -862,9 +865,7 @@ namespace pico8
   { // inversly adjust the camera for drawing hud elements so they stay in the
     // same place while moving the viewport
   }
-
-  auto celeste = buffer(128, 64, spritedata);
-
+  
   void init(bool swapped_buttons = false)
   {
     font(-1, -1, -1, _minimal_font);
@@ -878,5 +879,4 @@ namespace pico8
     spritesheet(celeste);
     pal();
   }
-
 }
