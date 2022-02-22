@@ -5,6 +5,11 @@
 #include "assets/data.h"
 #include "assets/assets.hpp"
 #include "assets/mountain.hpp"
+#include <stdio.h>
+// #include "pico/stdlib.h"
+#include "pico/multicore.h"
+#include "../pico-littlefs/littlefs-lib/pico_hal.h"
+
 using namespace std;
 using namespace picosystem;
 using namespace picomath;
@@ -199,10 +204,16 @@ namespace pico8
   static bool high_color_mode = true;
   static uint_fast8_t dontmap = 3; // seems like color 3 is never remapped (Alpha 48)
   static uint_fast8_t berries = 1;
-  static bool soundoff = false;
+  static bool sound = true;
+  static bool swapped_buttons = false;
 
   auto mountain = buffer(95, 48, mountaindata);
   auto celeste = buffer(128, 64, spritedata);
+
+  const int picowidth = 136; // workaround for
+                             // screen shake issue, should be 128
+  color_t _fdp[picowidth * picowidth] __attribute__((aligned(4))) = {};
+  static buffer_t *PICO8SCREEN = buffer(picowidth, picowidth, _fdp);
 
   // copy the source over the destination only if source color index has
   // opacity set in transparency palette
@@ -336,13 +347,6 @@ namespace pico8
       }
     }
   }
-
-  bool swapped_buttons = false;
-
-  const int picowidth = 136; // workaround for
-                             // screen shake issue, should be 128
-  color_t _fdp[picowidth * picowidth] __attribute__((aligned(4))) = {};
-  static buffer_t *PICO8SCREEN = buffer(picowidth, picowidth, _fdp);
 
   color_t getCurrentPencolor()
   {
@@ -841,22 +845,67 @@ namespace pico8
   {
   }
 
-  // sfx struct to access sfx data
+  static uint_fast8_t getVolume(uint_fast8_t v) {
+    return ceil(100 / 7 * v);
+  }
 
-  // play object
+  static float getPitch(uint_fast8_t v) {
+    return 440.f * exp2(((float)v - 33.f) / 12.f);
+  }
 
-  void sfx(uint32_t n, uint32_t channel = 0, uint32_t offset = 0, uint32_t length = 255)
-  {
-    if (soundoff)
-    {
-      return;
+  static uint_fast16_t getDuration(uint_fast8_t d) {
+    return ceil((float)d*measure);
+  }
+
+  static voice_t getVoice(waveform wave, effect fx, uint_fast8_t speed) {
+    auto noise = 0;
+    auto a = 0, d = 0, s = 0, r = 0;
+    if (wave == waveform::noise) {
+      noise = 100;
     }
-    // create sfx struct
-    // create play object with sfx struct
+    if (fx == effect::fade_in) {
+      a = getDuration(speed) / 2;
+      s = getDuration(speed) / 2;
+    } else if (fx == effect::fade_out) {
+      s = getDuration(speed) / 2;
+      r = getDuration(speed) / 2;
+    } else {
+      s = getDuration(speed);
+    }
+    return voice(a,d,s,r,0,0,0,noise,0);
+  }
+
+  static void internalsfx(uint32_t n, uint32_t channel = 0, uint32_t offset = 0, uint32_t length = 255)
+  {
+    auto pattern = patterns.at(n);
+    for (auto note : pattern.notes) {
+      // Create voice
+      auto voice = getVoice(note.wave, note.fx, pattern.speed);
+      // Play voice
+      play(voice, getPitch(note.pitch), getDuration(pattern.speed), getVolume(note.volume));
+      // Wait
+      sleep_ms(getDuration(pattern.speed));
+    }
+    // play empty note to silence audio
+    play(voice(0,0,100,0,0,0,0,0,0), 0, 100, 100);
+  }
+
+  static void launchsfx() {
+    uint32_t n = multicore_fifo_pop_blocking();
+    internalsfx(n);
+  }
+
+  // int sfxqueue;
+  static void sfx(uint32_t n, uint32_t channel = 0, uint32_t offset = 0, uint32_t length = 255) {
+    if (sound == true) {
+      multicore_reset_core1();
+      multicore_launch_core1(launchsfx);
+      multicore_fifo_push_blocking(n);
+    }
   }
 
   // music will not be implemented because it would sound like crap anyway
-  // with the piezo speaker,  only one channel and waveform
+  // with the barely audible piezo speaker,  only one channel and waveform
   void music(int32_t n, uint32_t fade_len = 0, uint32_t channel_mask = 15)
   {
   }
