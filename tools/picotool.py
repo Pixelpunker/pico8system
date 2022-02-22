@@ -1,7 +1,7 @@
 import re
 import collections
 P8Char = collections.namedtuple('P8Char', ('p8scii', 'p8string', 'name'))
-
+from sfx import *
 
 # The P8SCII character set
 P8SCII_CHARSET = [
@@ -387,7 +387,7 @@ def read_map(lines, gfxlines, version):
 		else:
 				substring = "\t" + substring
 		formattedlines.append(substring)
-	return "#include <array>\nusing namespace std;\n\nconst array<uint_fast8_t, 16384> map_data =\n{\n"+("".join(formattedlines))+"\n};"
+	return "\nconst array<uint_fast8_t, 16384> map_data =\n{\n"+("".join(formattedlines))+"\n};"
 
 def gfx_lines(lines, version):
 		"""Create an instance based on .p8 data lines.
@@ -421,3 +421,83 @@ def gfx_lines(lines, version):
 			formattedlines.append(substring)
 		return "\nstatic color_t spritedata[16384] =\n{\n"+("".join(formattedlines))+"\n};"
 
+effects = [
+	"p8::effect::none",
+	"p8::effect::slide",
+	"p8::effect::vibrato",
+	"p8::effect::drop",
+	"p8::effect::fade_in",
+	"p8::effect::fade_out",
+	"p8::effect::arp_fast",
+	"p8::effect::arp_slow"
+]
+
+waveforms = [
+    "p8::waveform::sine",
+    "p8::waveform::triangle",
+    "p8::waveform::sawtooth",
+    "p8::waveform::square",
+    "p8::waveform::pulse",
+    "p8::waveform::ringing",
+    "p8::waveform::noise",
+    "p8::waveform::ringing_sine",
+    "p8::waveform::custom_0",
+    "p8::waveform::custom_1",
+    "p8::waveform::custom_2",
+    "p8::waveform::custom_3",
+    "p8::waveform::custom_4",
+    "p8::waveform::custom_5",
+    "p8::waveform::custom_6",
+    "p8::waveform::custom_7"
+  ]
+
+def sfx_convert(datasection):
+	formattedlines = []
+	s = Sfx.from_lines(datasection, 4)
+	# sfxnotes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 14, 15, 16, 23, 35, 37, 38, 51, 54, 55]
+	for id in range(64):
+		notes = []
+		a, b, c, d = s.get_properties(id)
+		formattedlines.append("\t{{ {0}, {1}, {2}, {3}, {{\n".format(a,b,c,d))
+		lastindex = 0
+		for n in range(31, -1, -1):
+			note = s.get_note(id, n)
+			if not (note[2] == 0):
+				lastindex = n
+				break
+		for m in range(0, lastindex + 1, 1):
+			note2 = s.get_note(id, m)
+			if (m < lastindex):
+				formattedlines.append("\t\t{{ {0}, {1}, {2}, {3} }}, \n".format(note2[0], waveforms[note2[1]], note2[2], effects[note2[3]]))
+			else:
+				formattedlines.append("\t\t{{ {0}, {1}, {2}, {3} }}}}\n\t}},\n".format(note2[0], waveforms[note2[1]], note2[2], effects[note2[3]]))
+		lastindex = 0
+	return "\nstatic const vector<p8::pattern> patterns = {\n"+("".join(formattedlines))+"};"
+	# note: pitch waveform volume effect
+	# pattern: editormode speed loopstart loopend
+
+	# effekte fadeout und slide umsetzen
+	# waveforms: 
+	# long und short square, ringing, sawtooth, ringing sinus, 
+	# triangle, noise
+	# --> long and short square, noise, ringing square
+
+	# 0->SQUARE
+	# 1->SQUARE
+	# 2->SQUARE
+	# 3->LONG_SQUARE
+	# 4->SHORT_SQUARE
+	# 5->SQUARE with RINGING
+	# 6->SQUARE with NOISE
+	# 7->SQUARE with RINGING
+
+	# für slide note-funktion erweitern
+
+	# jede note dauert 7812 Mikrosekunden mal sfx-Speed
+
+	# keine sfx benutzen loops
+
+
+# keine timer, einfach nur WARTEN (läuft ja auf dem 2. Core...)
+
+# wo ist die formel zur frequenzberechnung?

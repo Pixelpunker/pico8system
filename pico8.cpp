@@ -5,6 +5,11 @@
 #include "assets/data.h"
 #include "assets/assets.hpp"
 #include "assets/mountain.hpp"
+#include <stdio.h>
+// #include "pico/stdlib.h"
+#include "pico/multicore.h"
+#include "../pico-littlefs/littlefs-lib/pico_hal.h"
+
 using namespace std;
 using namespace picosystem;
 using namespace picomath;
@@ -13,270 +18,347 @@ using namespace picomath;
 
 namespace pico8
 {
-  color_t rgb2(uint16_t r, uint16_t g, uint16_t b, uint16_t a = 0xFF) { // PicoSystem only accepts 4 bit color values (0-15)
-    return rgb(r/16, g/16, b/16, a/16);
+  color_t rgb2(uint16_t r, uint16_t g, uint16_t b, uint16_t a = 0xFF)
+  { // PicoSystem only accepts 4 bit color values (0-15)
+    return rgb(r / 16, g / 16, b / 16, a / 16);
   }
 
-  static bool soundoff = false;
-
   const uint8_t _minimal_font_data[96][9] = {
-  {4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, //  
-  {3, 0x80, 0x80, 0x80, 0x00, 0x80, 0x00, 0x00, 0x00}, // !
-  {5, 0xA0, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // "
-  {7, 0x50, 0xF8, 0x50, 0xF8, 0x50, 0x00, 0x00, 0x00}, // #
-  {7, 0x70, 0xA0, 0x70, 0x28, 0x70, 0x00, 0x00, 0x00}, // $
-  {7, 0x88, 0x10, 0x20, 0x40, 0x88, 0x00, 0x00, 0x00}, // %
-  {8, 0x60, 0x90, 0x74, 0x88, 0x74, 0x00, 0x00, 0x00}, // &
-  {3, 0x80, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // '
-  {4, 0x40, 0x80, 0x80, 0x80, 0x40, 0x00, 0x00, 0x00}, // (
-  {4, 0x80, 0x40, 0x40, 0x40, 0x80, 0x00, 0x00, 0x00}, // )
-  {5, 0x00, 0xA0, 0x40, 0xA0, 0x00, 0x00, 0x00, 0x00}, // *
-  {5, 0x00, 0x40, 0xE0, 0x40, 0x00, 0x00, 0x00, 0x00}, // +
-  {3, 0x00, 0x00, 0x00, 0x00, 0x80, 0x80, 0x00, 0x00}, // ,
-  {5, 0x00, 0x00, 0xE0, 0x00, 0x00, 0x00, 0x00, 0x00}, // -
-  {3, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00}, // .
-  {5, 0x20, 0x40, 0x40, 0x80, 0x80, 0x00, 0x00, 0x00}, // /
-  {7, 0x78, 0x88, 0x88, 0x88, 0x70, 0x00, 0x00, 0x00}, // 0
-  {4, 0xC0, 0x40, 0x40, 0x40, 0x40, 0x00, 0x00, 0x00}, // 1
-  {6, 0xE0, 0x10, 0x60, 0x80, 0xF0, 0x00, 0x00, 0x00}, // 2
-  {6, 0xF0, 0x10, 0xE0, 0x10, 0xE0, 0x00, 0x00, 0x00}, // 3
-  {7, 0x90, 0x90, 0x90, 0x78, 0x10, 0x00, 0x00, 0x00}, // 4
-  {6, 0xF0, 0x80, 0xE0, 0x10, 0xE0, 0x00, 0x00, 0x00}, // 5
-  {7, 0x78, 0x80, 0xF0, 0x88, 0xF0, 0x00, 0x00, 0x00}, // 6
-  {7, 0xF8, 0x88, 0x08, 0x10, 0x20, 0x00, 0x00, 0x00}, // 7
-  {7, 0x78, 0x88, 0x70, 0x88, 0x70, 0x00, 0x00, 0x00}, // 8
-  {7, 0x78, 0x88, 0x78, 0x08, 0x70, 0x00, 0x00, 0x00}, // 9
-  {3, 0x00, 0x80, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00}, // :
-  {3, 0x00, 0x80, 0x00, 0x00, 0x80, 0x80, 0x00, 0x00}, // ;
-  {5, 0x20, 0x40, 0x80, 0x40, 0x20, 0x00, 0x00, 0x00}, // <
-  {5, 0x00, 0xE0, 0x00, 0xE0, 0x00, 0x00, 0x00, 0x00}, // =
-  {5, 0x80, 0x40, 0x20, 0x40, 0x80, 0x00, 0x00, 0x00}, // >
-  {6, 0xE0, 0x10, 0x60, 0x00, 0x40, 0x00, 0x00, 0x00}, // ?
-  {8, 0x7C, 0x84, 0xB4, 0xA4, 0x98, 0x00, 0x00, 0x00}, // @
-  {7, 0x78, 0x88, 0x88, 0xF8, 0x88, 0x00, 0x00, 0x00}, // A
-  {7, 0x70, 0x90, 0xF0, 0x88, 0xF0, 0x00, 0x00, 0x00}, // B
-  {6, 0x70, 0x80, 0x80, 0x80, 0x70, 0x00, 0x00, 0x00}, // C
-  {7, 0x70, 0x88, 0x88, 0x88, 0xF0, 0x00, 0x00, 0x00}, // D
-  {6, 0x70, 0x80, 0xF0, 0x80, 0xF0, 0x00, 0x00, 0x00}, // E
-  {6, 0x70, 0x80, 0x80, 0xF0, 0x80, 0x00, 0x00, 0x00}, // F
-  {7, 0x78, 0x80, 0x98, 0x88, 0xF0, 0x00, 0x00, 0x00}, // G
-  {6, 0x90, 0x90, 0xF0, 0x90, 0x90, 0x00, 0x00, 0x00}, // H
-  {5, 0xE0, 0x40, 0x40, 0x40, 0xE0, 0x00, 0x00, 0x00}, // I
-  {6, 0x70, 0x10, 0x10, 0x90, 0xE0, 0x00, 0x00, 0x00}, // J
-  {6, 0x90, 0xA0, 0xE0, 0x90, 0x90, 0x00, 0x00, 0x00}, // K
-  {6, 0x80, 0x80, 0x80, 0x80, 0xF0, 0x00, 0x00, 0x00}, // L
-  {7, 0x50, 0xA8, 0xA8, 0xA8, 0xA8, 0x00, 0x00, 0x00}, // M
-  {7, 0x78, 0x88, 0x88, 0x88, 0x88, 0x00, 0x00, 0x00}, // N
-  {7, 0x78, 0x88, 0x88, 0x88, 0x70, 0x00, 0x00, 0x00}, // O
-  {7, 0x78, 0x88, 0x88, 0xF0, 0x80, 0x00, 0x00, 0x00}, // P
-  {7, 0x78, 0x88, 0x88, 0x88, 0x70, 0x10, 0x00, 0x00}, // Q
-  {7, 0x78, 0x88, 0x88, 0xF0, 0x90, 0x00, 0x00, 0x00}, // R
-  {6, 0x70, 0x80, 0x60, 0x10, 0xE0, 0x00, 0x00, 0x00}, // S
-  {7, 0xF8, 0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00}, // T
-  {7, 0x88, 0x88, 0x88, 0x88, 0x70, 0x00, 0x00, 0x00}, // U
-  {7, 0x88, 0x88, 0x88, 0x50, 0x20, 0x00, 0x00, 0x00}, // V
-  {7, 0xA8, 0xA8, 0xA8, 0xA8, 0xD0, 0x00, 0x00, 0x00}, // W
-  {6, 0x90, 0x90, 0x60, 0x90, 0x90, 0x00, 0x00, 0x00}, // X
-  {6, 0x90, 0x90, 0x70, 0x10, 0xE0, 0x00, 0x00, 0x00}, // Y
-  {6, 0xF0, 0x10, 0x60, 0x80, 0xF0, 0x00, 0x00, 0x00}, // Z
-  {4, 0xC0, 0x80, 0x80, 0x80, 0xC0, 0x00, 0x00, 0x00}, // [
-  {5, 0x80, 0x40, 0x40, 0x20, 0x20, 0x00, 0x00, 0x00}, // "\"
-  {4, 0xC0, 0x40, 0x40, 0x40, 0xC0, 0x00, 0x00, 0x00}, // ]
-  {5, 0x40, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // ^
-  {5, 0x00, 0x00, 0x00, 0x00, 0xE0, 0x00, 0x00, 0x00}, // _
-  {4, 0x80, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // `
-  {7, 0x78, 0x88, 0x88, 0xF8, 0x88, 0x00, 0x00, 0x00}, // a
-  {7, 0x70, 0x90, 0xF0, 0x88, 0xF0, 0x00, 0x00, 0x00}, // b
-  {6, 0x70, 0x80, 0x80, 0x80, 0x70, 0x00, 0x00, 0x00}, // c
-  {7, 0x70, 0x88, 0x88, 0x88, 0xF0, 0x00, 0x00, 0x00}, // d
-  {6, 0x70, 0x80, 0xF0, 0x80, 0xF0, 0x00, 0x00, 0x00}, // e
-  {6, 0x70, 0x80, 0x80, 0xF0, 0x80, 0x00, 0x00, 0x00}, // f
-  {7, 0x78, 0x80, 0x98, 0x88, 0xF0, 0x00, 0x00, 0x00}, // g
-  {6, 0x90, 0x90, 0xF0, 0x90, 0x90, 0x00, 0x00, 0x00}, // h
-  {5, 0xE0, 0x40, 0x40, 0x40, 0xE0, 0x00, 0x00, 0x00}, // i
-  {6, 0x70, 0x10, 0x10, 0x90, 0xE0, 0x00, 0x00, 0x00}, // j
-  {6, 0x90, 0xA0, 0xE0, 0x90, 0x90, 0x00, 0x00, 0x00}, // k
-  {6, 0x80, 0x80, 0x80, 0x80, 0xF0, 0x00, 0x00, 0x00}, // l
-  {7, 0x58, 0xA8, 0xA8, 0xA8, 0xA8, 0x00, 0x00, 0x00}, // m
-  {7, 0x78, 0x88, 0x88, 0x88, 0x88, 0x00, 0x00, 0x00}, // n
-  {7, 0x78, 0x88, 0x88, 0x88, 0x70, 0x00, 0x00, 0x00}, // o
-  {7, 0x78, 0x88, 0x88, 0xF0, 0x80, 0x00, 0x00, 0x00}, // p
-  {7, 0x78, 0x88, 0x88, 0x88, 0x70, 0x10, 0x00, 0x00}, // q
-  {7, 0x78, 0x88, 0x88, 0xF0, 0x90, 0x00, 0x00, 0x00}, // r
-  {6, 0x70, 0x80, 0x60, 0x10, 0xE0, 0x00, 0x00, 0x00}, // s
-  {7, 0xF8, 0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00}, // t
-  {7, 0x88, 0x88, 0x88, 0x88, 0x70, 0x00, 0x00, 0x00}, // u
-  {7, 0x88, 0x88, 0x88, 0x50, 0x20, 0x00, 0x00, 0x00}, // v
-  {7, 0xA8, 0xA8, 0xA8, 0xA8, 0xD0, 0x00, 0x00, 0x00}, // w
-  {6, 0x90, 0x90, 0x60, 0x90, 0x90, 0x00, 0x00, 0x00}, // x
-  {6, 0x90, 0x90, 0x70, 0x10, 0xE0, 0x00, 0x00, 0x00}, // y
-  {6, 0xF0, 0x10, 0x60, 0x80, 0xF0, 0x00, 0x00, 0x00}, // z
-  {5, 0x60, 0x40, 0xC0, 0x40, 0x60, 0x00, 0x00, 0x00}, // {
-  {3, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 0x00}, // |
-  {5, 0xC0, 0x40, 0x60, 0x40, 0xC0, 0x00, 0x00, 0x00}, // }
-  {5, 0x60, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // ~
-  {3, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-};
+      {4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, //
+      {3, 0x80, 0x80, 0x80, 0x00, 0x80, 0x00, 0x00, 0x00}, // !
+      {5, 0xA0, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // "
+      {7, 0x50, 0xF8, 0x50, 0xF8, 0x50, 0x00, 0x00, 0x00}, // #
+      {7, 0x70, 0xA0, 0x70, 0x28, 0x70, 0x00, 0x00, 0x00}, // $
+      {7, 0x88, 0x10, 0x20, 0x40, 0x88, 0x00, 0x00, 0x00}, // %
+      {8, 0x60, 0x90, 0x74, 0x88, 0x74, 0x00, 0x00, 0x00}, // &
+      {3, 0x80, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // '
+      {4, 0x40, 0x80, 0x80, 0x80, 0x40, 0x00, 0x00, 0x00}, // (
+      {4, 0x80, 0x40, 0x40, 0x40, 0x80, 0x00, 0x00, 0x00}, // )
+      {5, 0x00, 0xA0, 0x40, 0xA0, 0x00, 0x00, 0x00, 0x00}, // *
+      {5, 0x00, 0x40, 0xE0, 0x40, 0x00, 0x00, 0x00, 0x00}, // +
+      {3, 0x00, 0x00, 0x00, 0x00, 0x80, 0x80, 0x00, 0x00}, // ,
+      {5, 0x00, 0x00, 0xE0, 0x00, 0x00, 0x00, 0x00, 0x00}, // -
+      {3, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00}, // .
+      {5, 0x20, 0x40, 0x40, 0x80, 0x80, 0x00, 0x00, 0x00}, // /
+      {7, 0x78, 0x88, 0x88, 0x88, 0x70, 0x00, 0x00, 0x00}, // 0
+      {4, 0xC0, 0x40, 0x40, 0x40, 0x40, 0x00, 0x00, 0x00}, // 1
+      {6, 0xE0, 0x10, 0x60, 0x80, 0xF0, 0x00, 0x00, 0x00}, // 2
+      {6, 0xF0, 0x10, 0xE0, 0x10, 0xE0, 0x00, 0x00, 0x00}, // 3
+      {7, 0x90, 0x90, 0x90, 0x78, 0x10, 0x00, 0x00, 0x00}, // 4
+      {6, 0xF0, 0x80, 0xE0, 0x10, 0xE0, 0x00, 0x00, 0x00}, // 5
+      {7, 0x78, 0x80, 0xF0, 0x88, 0xF0, 0x00, 0x00, 0x00}, // 6
+      {7, 0xF8, 0x88, 0x08, 0x10, 0x20, 0x00, 0x00, 0x00}, // 7
+      {7, 0x78, 0x88, 0x70, 0x88, 0x70, 0x00, 0x00, 0x00}, // 8
+      {7, 0x78, 0x88, 0x78, 0x08, 0x70, 0x00, 0x00, 0x00}, // 9
+      {3, 0x00, 0x80, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00}, // :
+      {3, 0x00, 0x80, 0x00, 0x00, 0x80, 0x80, 0x00, 0x00}, // ;
+      {5, 0x20, 0x40, 0x80, 0x40, 0x20, 0x00, 0x00, 0x00}, // <
+      {5, 0x00, 0xE0, 0x00, 0xE0, 0x00, 0x00, 0x00, 0x00}, // =
+      {5, 0x80, 0x40, 0x20, 0x40, 0x80, 0x00, 0x00, 0x00}, // >
+      {6, 0xE0, 0x10, 0x60, 0x00, 0x40, 0x00, 0x00, 0x00}, // ?
+      {8, 0x7C, 0x84, 0xB4, 0xA4, 0x98, 0x00, 0x00, 0x00}, // @
+      {7, 0x78, 0x88, 0x88, 0xF8, 0x88, 0x00, 0x00, 0x00}, // A
+      {7, 0x70, 0x90, 0xF0, 0x88, 0xF0, 0x00, 0x00, 0x00}, // B
+      {6, 0x70, 0x80, 0x80, 0x80, 0x70, 0x00, 0x00, 0x00}, // C
+      {7, 0x70, 0x88, 0x88, 0x88, 0xF0, 0x00, 0x00, 0x00}, // D
+      {6, 0x70, 0x80, 0xF0, 0x80, 0xF0, 0x00, 0x00, 0x00}, // E
+      {6, 0x70, 0x80, 0x80, 0xF0, 0x80, 0x00, 0x00, 0x00}, // F
+      {7, 0x78, 0x80, 0x98, 0x88, 0xF0, 0x00, 0x00, 0x00}, // G
+      {6, 0x90, 0x90, 0xF0, 0x90, 0x90, 0x00, 0x00, 0x00}, // H
+      {5, 0xE0, 0x40, 0x40, 0x40, 0xE0, 0x00, 0x00, 0x00}, // I
+      {6, 0x70, 0x10, 0x10, 0x90, 0xE0, 0x00, 0x00, 0x00}, // J
+      {6, 0x90, 0xA0, 0xE0, 0x90, 0x90, 0x00, 0x00, 0x00}, // K
+      {6, 0x80, 0x80, 0x80, 0x80, 0xF0, 0x00, 0x00, 0x00}, // L
+      {7, 0x50, 0xA8, 0xA8, 0xA8, 0xA8, 0x00, 0x00, 0x00}, // M
+      {7, 0x78, 0x88, 0x88, 0x88, 0x88, 0x00, 0x00, 0x00}, // N
+      {7, 0x78, 0x88, 0x88, 0x88, 0x70, 0x00, 0x00, 0x00}, // O
+      {7, 0x78, 0x88, 0x88, 0xF0, 0x80, 0x00, 0x00, 0x00}, // P
+      {7, 0x78, 0x88, 0x88, 0x88, 0x70, 0x10, 0x00, 0x00}, // Q
+      {7, 0x78, 0x88, 0x88, 0xF0, 0x90, 0x00, 0x00, 0x00}, // R
+      {6, 0x70, 0x80, 0x60, 0x10, 0xE0, 0x00, 0x00, 0x00}, // S
+      {7, 0xF8, 0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00}, // T
+      {7, 0x88, 0x88, 0x88, 0x88, 0x70, 0x00, 0x00, 0x00}, // U
+      {7, 0x88, 0x88, 0x88, 0x50, 0x20, 0x00, 0x00, 0x00}, // V
+      {7, 0xA8, 0xA8, 0xA8, 0xA8, 0xD0, 0x00, 0x00, 0x00}, // W
+      {6, 0x90, 0x90, 0x60, 0x90, 0x90, 0x00, 0x00, 0x00}, // X
+      {6, 0x90, 0x90, 0x70, 0x10, 0xE0, 0x00, 0x00, 0x00}, // Y
+      {6, 0xF0, 0x10, 0x60, 0x80, 0xF0, 0x00, 0x00, 0x00}, // Z
+      {4, 0xC0, 0x80, 0x80, 0x80, 0xC0, 0x00, 0x00, 0x00}, // [
+      {5, 0x80, 0x40, 0x40, 0x20, 0x20, 0x00, 0x00, 0x00}, // "\"
+      {4, 0xC0, 0x40, 0x40, 0x40, 0xC0, 0x00, 0x00, 0x00}, // ]
+      {5, 0x40, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // ^
+      {5, 0x00, 0x00, 0x00, 0x00, 0xE0, 0x00, 0x00, 0x00}, // _
+      {4, 0x80, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // `
+      {7, 0x78, 0x88, 0x88, 0xF8, 0x88, 0x00, 0x00, 0x00}, // a
+      {7, 0x70, 0x90, 0xF0, 0x88, 0xF0, 0x00, 0x00, 0x00}, // b
+      {6, 0x70, 0x80, 0x80, 0x80, 0x70, 0x00, 0x00, 0x00}, // c
+      {7, 0x70, 0x88, 0x88, 0x88, 0xF0, 0x00, 0x00, 0x00}, // d
+      {6, 0x70, 0x80, 0xF0, 0x80, 0xF0, 0x00, 0x00, 0x00}, // e
+      {6, 0x70, 0x80, 0x80, 0xF0, 0x80, 0x00, 0x00, 0x00}, // f
+      {7, 0x78, 0x80, 0x98, 0x88, 0xF0, 0x00, 0x00, 0x00}, // g
+      {6, 0x90, 0x90, 0xF0, 0x90, 0x90, 0x00, 0x00, 0x00}, // h
+      {5, 0xE0, 0x40, 0x40, 0x40, 0xE0, 0x00, 0x00, 0x00}, // i
+      {6, 0x70, 0x10, 0x10, 0x90, 0xE0, 0x00, 0x00, 0x00}, // j
+      {6, 0x90, 0xA0, 0xE0, 0x90, 0x90, 0x00, 0x00, 0x00}, // k
+      {6, 0x80, 0x80, 0x80, 0x80, 0xF0, 0x00, 0x00, 0x00}, // l
+      {7, 0x58, 0xA8, 0xA8, 0xA8, 0xA8, 0x00, 0x00, 0x00}, // m
+      {7, 0x78, 0x88, 0x88, 0x88, 0x88, 0x00, 0x00, 0x00}, // n
+      {7, 0x78, 0x88, 0x88, 0x88, 0x70, 0x00, 0x00, 0x00}, // o
+      {7, 0x78, 0x88, 0x88, 0xF0, 0x80, 0x00, 0x00, 0x00}, // p
+      {7, 0x78, 0x88, 0x88, 0x88, 0x70, 0x10, 0x00, 0x00}, // q
+      {7, 0x78, 0x88, 0x88, 0xF0, 0x90, 0x00, 0x00, 0x00}, // r
+      {6, 0x70, 0x80, 0x60, 0x10, 0xE0, 0x00, 0x00, 0x00}, // s
+      {7, 0xF8, 0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00}, // t
+      {7, 0x88, 0x88, 0x88, 0x88, 0x70, 0x00, 0x00, 0x00}, // u
+      {7, 0x88, 0x88, 0x88, 0x50, 0x20, 0x00, 0x00, 0x00}, // v
+      {7, 0xA8, 0xA8, 0xA8, 0xA8, 0xD0, 0x00, 0x00, 0x00}, // w
+      {6, 0x90, 0x90, 0x60, 0x90, 0x90, 0x00, 0x00, 0x00}, // x
+      {6, 0x90, 0x90, 0x70, 0x10, 0xE0, 0x00, 0x00, 0x00}, // y
+      {6, 0xF0, 0x10, 0x60, 0x80, 0xF0, 0x00, 0x00, 0x00}, // z
+      {5, 0x60, 0x40, 0xC0, 0x40, 0x60, 0x00, 0x00, 0x00}, // {
+      {3, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 0x00}, // |
+      {5, 0xC0, 0x40, 0x60, 0x40, 0xC0, 0x00, 0x00, 0x00}, // }
+      {5, 0x60, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // ~
+      {3, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 
-uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
+  uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
 
   static array<color_t, 32> system_palette = {
-    //0xGBAR
-      0x0000, //rgb2(0, 0, 0),         // 0 	black (also transparent by default for sprites)
-      0x2511, //rgb2(29, 43, 83),      // 1 	dark-blue
-      0x2527, //rgb2(126, 37, 83),     // 2 	dark-purple
-      0x8530, //rgb2(0, 135, 81),      // 3 	dark-green
-      0x534A, //rgb2(171, 82, 54),     // 4 	brown
-      0x5455, //rgb2(95, 87, 79),      // 5 	dark-grey
-      0xCC6C, //rgb2(194, 195, 199),   // 6 	light-grey
-      0xFE7F, //rgb2(255, 241, 232),   // 7 	white
-      0x048F, //rgb2(255, 0, 77),      // 8 	red
-      0xA09F, //rgb2(255, 163, 0),     // 9	orange
-      0xE2AF, //rgb2(255, 236, 39),    // 10	yellow
-      0xE3B0, //rgb2(0, 228, 54),      // 11 green
-      0xAFC2, //rgb2(41, 173, 255),    // 12 blue
-      0x79D8, //rgb2(131, 118, 156),   // 13 lavender
-      0x7AEF, //rgb2(255, 119, 168),   // 14 pink
-      0xCAFF, //rgb2(255, 204, 170),   // 15 light-peach
-      0x1102, //rgb2(41, 24, 20),    // 128 	brownish-black
-      0x1311, //rgb2(17, 29, 53),    // 129 	darker-blue
-      0x2324, //rgb2(66, 33, 54),    // 130 	darker-purple
-      0x5531, //rgb2(18, 83, 89),    // 131 	blue-green
-      0x2247, //rgb2(116, 47, 41),   // 132 	dark-brown
-      0x3354, //rgb2(73, 51, 59),    // 133 	darker-grey
-      0x876A, //rgb2(162, 136, 121), // 134 	medium-grey
-      0xE77F, //rgb2(243, 239, 125), // 135 	light-yellow
-      0x158B, //rgb2(190, 18, 80),   // 136 	dark-red
-      0x629F, //rgb2(255, 108, 36),  // 137 	dark-orange
-      0xE2AA, //rgb2(168, 231, 46),  // 138 	lime-green
-      0xB4B0, //rgb2(0, 181, 67),    // 139 	medium-green
-      0x5BC0, //rgb2(6, 90, 181),    // 140	true-blue
-      0x46D7, //rgb2(117, 70, 101),  // 141 	mauve
-      0x65EF, //rgb2(255, 110, 89),  // 142 	dark-peach
-      0x98FF //rgb2(255, 157, 129), // 143 	peach
+      // 0xGBAR
+      0x0000, // rgb2(0, 0, 0),         // 0 	black (also transparent by default for sprites)
+      0x2511, // rgb2(29, 43, 83),      // 1 	dark-blue
+      0x2527, // rgb2(126, 37, 83),     // 2 	dark-purple
+      0x8530, // rgb2(0, 135, 81),      // 3 	dark-green
+      0x534A, // rgb2(171, 82, 54),     // 4 	brown
+      0x5455, // rgb2(95, 87, 79),      // 5 	dark-grey
+      0xCC6C, // rgb2(194, 195, 199),   // 6 	light-grey
+      0xFE7F, // rgb2(255, 241, 232),   // 7 	white
+      0x048F, // rgb2(255, 0, 77),      // 8 	red
+      0xA09F, // rgb2(255, 163, 0),     // 9	orange
+      0xE2AF, // rgb2(255, 236, 39),    // 10	yellow
+      0xE3B0, // rgb2(0, 228, 54),      // 11 green
+      0xAFC2, // rgb2(41, 173, 255),    // 12 blue
+      0x79D8, // rgb2(131, 118, 156),   // 13 lavender
+      0x7AEF, // rgb2(255, 119, 168),   // 14 pink
+      0xCAFF, // rgb2(255, 204, 170),   // 15 light-peach
+      0x1102, // rgb2(41, 24, 20),    // 128 	brownish-black
+      0x1311, // rgb2(17, 29, 53),    // 129 	darker-blue
+      0x2324, // rgb2(66, 33, 54),    // 130 	darker-purple
+      0x5531, // rgb2(18, 83, 89),    // 131 	blue-green
+      0x2247, // rgb2(116, 47, 41),   // 132 	dark-brown
+      0x3354, // rgb2(73, 51, 59),    // 133 	darker-grey
+      0x876A, // rgb2(162, 136, 121), // 134 	medium-grey
+      0xE77F, // rgb2(243, 239, 125), // 135 	light-yellow
+      0x158B, // rgb2(190, 18, 80),   // 136 	dark-red
+      0x629F, // rgb2(255, 108, 36),  // 137 	dark-orange
+      0xE2AA, // rgb2(168, 231, 46),  // 138 	lime-green
+      0xB4B0, // rgb2(0, 181, 67),    // 139 	medium-green
+      0x5BC0, // rgb2(6, 90, 181),    // 140	true-blue
+      0x46D7, // rgb2(117, 70, 101),  // 141 	mauve
+      0x65EF, // rgb2(255, 110, 89),  // 142 	dark-peach
+      0x98FF  // rgb2(255, 157, 129), // 143 	peach
   };
   static array<color_t, 32> system_palette2 = {
-    //0xGBAR
-      0x00F0, //rgb2(0, 0, 0),         // 0 	black (also transparent by default for sprites)
-      0x25F1, //rgb2(29, 43, 83),      // 1 	dark-blue
-      0x25F7, //rgb2(126, 37, 83),     // 2 	dark-purple
-      0x85F0, //rgb2(0, 135, 81),      // 3 	dark-green
-      0x53FA, //rgb2(171, 82, 54),     // 4 	brown
-      0x54F5, //rgb2(95, 87, 79),      // 5 	dark-grey
-      0xCCFC, //rgb2(194, 195, 199),   // 6 	light-grey
-      0xFEFF, //rgb2(255, 241, 232),   // 7 	white
-      0x04FF, //rgb2(255, 0, 77),      // 8 	red
-      0xA0FF, //rgb2(255, 163, 0),     // 9	orange
-      0xE2FF, //rgb2(255, 236, 39),    // 10	yellow
-      0xE3F0, //rgb2(0, 228, 54),      // 11 green
-      0xAFF2, //rgb2(41, 173, 255),    // 12 blue
-      0x79F8, //rgb2(131, 118, 156),   // 13 lavender
-      0x7AFF, //rgb2(255, 119, 168),   // 14 pink
-      0xCAFF, //rgb2(255, 204, 170),   // 15 light-peach
-      0x11F2, //rgb2(41, 24, 20),    // 128 	brownish-black
-      0x13F1, //rgb2(17, 29, 53),    // 129 	darker-blue
-      0x23F4, //rgb2(66, 33, 54),    // 130 	darker-purple
-      0x55F1, //rgb2(18, 83, 89),    // 131 	blue-green
-      0x22F7, //rgb2(116, 47, 41),   // 132 	dark-brown
-      0x33F4, //rgb2(73, 51, 59),    // 133 	darker-grey
-      0x87FA, //rgb2(162, 136, 121), // 134 	medium-grey
-      0xE7FF, //rgb2(243, 239, 125), // 135 	light-yellow
-      0x15FB, //rgb2(190, 18, 80),   // 136 	dark-red
-      0x62FF, //rgb2(255, 108, 36),  // 137 	dark-orange
-      0xE2FA, //rgb2(168, 231, 46),  // 138 	lime-green
-      0xB4F0, //rgb2(0, 181, 67),    // 139 	medium-green
-      0x5BF0, //rgb2(6, 90, 181),    // 140	true-blue
-      0x46F7, //rgb2(117, 70, 101),  // 141 	mauve
-      0x65FF, //rgb2(255, 110, 89),  // 142 	dark-peach
-      0x98FF //rgb2(255, 157, 129), // 143 	peach
+      // 0xGBAR
+      0x00F0, // rgb2(0, 0, 0),         // 0 	black (also transparent by default for sprites)
+      0x25F1, // rgb2(29, 43, 83),      // 1 	dark-blue
+      0x25F7, // rgb2(126, 37, 83),     // 2 	dark-purple
+      0x85F0, // rgb2(0, 135, 81),      // 3 	dark-green
+      0x53FA, // rgb2(171, 82, 54),     // 4 	brown
+      0x54F5, // rgb2(95, 87, 79),      // 5 	dark-grey
+      0xCCFC, // rgb2(194, 195, 199),   // 6 	light-grey
+      0xFEFF, // rgb2(255, 241, 232),   // 7 	white
+      0x04FF, // rgb2(255, 0, 77),      // 8 	red
+      0xA0FF, // rgb2(255, 163, 0),     // 9	orange
+      0xE2FF, // rgb2(255, 236, 39),    // 10	yellow
+      0xE3F0, // rgb2(0, 228, 54),      // 11 green
+      0xAFF2, // rgb2(41, 173, 255),    // 12 blue
+      0x79F8, // rgb2(131, 118, 156),   // 13 lavender
+      0x7AFF, // rgb2(255, 119, 168),   // 14 pink
+      0xCAFF, // rgb2(255, 204, 170),   // 15 light-peach
+      0x11F2, // rgb2(41, 24, 20),    // 128 	brownish-black
+      0x13F1, // rgb2(17, 29, 53),    // 129 	darker-blue
+      0x23F4, // rgb2(66, 33, 54),    // 130 	darker-purple
+      0x55F1, // rgb2(18, 83, 89),    // 131 	blue-green
+      0x22F7, // rgb2(116, 47, 41),   // 132 	dark-brown
+      0x33F4, // rgb2(73, 51, 59),    // 133 	darker-grey
+      0x87FA, // rgb2(162, 136, 121), // 134 	medium-grey
+      0xE7FF, // rgb2(243, 239, 125), // 135 	light-yellow
+      0x15FB, // rgb2(190, 18, 80),   // 136 	dark-red
+      0x62FF, // rgb2(255, 108, 36),  // 137 	dark-orange
+      0xE2FA, // rgb2(168, 231, 46),  // 138 	lime-green
+      0xB4F0, // rgb2(0, 181, 67),    // 139 	medium-green
+      0x5BF0, // rgb2(6, 90, 181),    // 140	true-blue
+      0x46F7, // rgb2(117, 70, 101),  // 141 	mauve
+      0x65FF, // rgb2(255, 110, 89),  // 142 	dark-peach
+      0x98FF  // rgb2(255, 157, 129), // 143 	peach
   };
   static array<uint_fast8_t, (uint_fast8_t)16> draw_palette = {
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
-  };
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
   static array<uint_fast8_t, (uint_fast8_t)16> screen_palette = {
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
-  };
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
   static array<uint_fast8_t, (uint_fast8_t)16> secondary_palette = {
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
-  };
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
   static array<uint_fast8_t, (uint_fast8_t)16> transparency_palette = {
-    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-  };
+      0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  static bool high_color_mode = true;
+  static uint_fast8_t dontmap = 3; // seems like color 3 is never remapped (Alpha 48)
+  static uint_fast8_t berries = 1;
+  static bool sound = true;
+  static bool swapped_buttons = false;
+
+  auto mountain = buffer(95, 48, mountaindata);
+  auto celeste = buffer(128, 64, spritedata);
+
+  const int picowidth = 136; // workaround for
+                             // screen shake issue, should be 128
+  color_t _fdp[picowidth * picowidth] __attribute__((aligned(4))) = {};
+  static buffer_t *PICO8SCREEN = buffer(picowidth, picowidth, _fdp);
 
   // copy the source over the destination only if source color index has
   // opacity set in transparency palette
   // copy using draw palette ignorierung actual rgb values
   void SPRITE(color_t *ps, int32_t so, int32_t ss, color_t *pd, uint32_t c)
   {
-    while (c--)
+    if (!high_color_mode)
     {
-      color_t s = *(ps + (so >> 16));
-      auto index = (s >> 4) & 0x0F;
-
-      // copy if alpha component in transparency palette is opaque
-      if (transparency_palette[index] != 0)
+      while (c--)
       {
-        *pd = system_palette[draw_palette[index]];
-      }
+        color_t s = *(ps + (so >> 16));
+        auto index = (s >> 4) & 0x0F;
 
-      // step destination and source
-      pd++;
-      so += ss;
+        // copy if alpha component in transparency palette is opaque
+        if (transparency_palette[index] != 0)
+        {
+          *pd = system_palette[draw_palette[index]];
+        }
+
+        // step destination and source
+        pd++;
+        so += ss;
+      }
+    }
+    else
+    {
+      while (c--)
+      {
+        color_t s = *(ps + (so >> 16));
+        auto index = (s >> 4) & 0x0F;
+        if (index == dontmap)
+        {
+          // copy if not black
+          if ((s & 0xFF0F) != 0x0000)
+          {
+            *pd = s;
+          }
+        }
+        else
+        {
+          // copy if alpha component in transparency palette is opaque
+          if (transparency_palette[index] != 0)
+          {
+            *pd = system_palette[draw_palette[index]];
+          }
+        }
+
+        // step destination and source
+        pd++;
+        so += ss;
+      }
     }
   }
 
   // copy using draw palette ignorierung actual rgb values
   void PALETTE(color_t *ps, int32_t so, int32_t ss, color_t *pd, uint32_t c)
   {
-    while (c--)
+    if (!high_color_mode)
     {
-      color_t s = *(ps + (so >> 16));
-      auto index = (s >> 4) & 0x0F;
+      while (c--)
+      {
+        color_t s = *(ps + (so >> 16));
+        auto index = (s >> 4) & 0x0F;
 
-      *pd = system_palette[draw_palette[index]];
+        *pd = system_palette[draw_palette[index]];
 
-      // step destination and source
-      pd++;
-      so += ss;
+        // step destination and source
+        pd++;
+        so += ss;
+      }
+    }
+    else
+    {
+      while (c--)
+      {
+        color_t s = *(ps + (so >> 16));
+        auto index = (s >> 4) & 0x0F;
+        if (index == dontmap)
+        {
+          *pd = s;
+        }
+        else
+        {
+          *pd = system_palette[draw_palette[index]];
+        }
+
+        // step destination and source
+        pd++;
+        so += ss;
+      }
     }
   }
-
 
   // copy using screen palette ignorierung actual rgb values
   // and converting to normal rgba values for other picosystem effects
   void CONVERT(color_t *ps, int32_t so, int32_t ss, color_t *pd, uint32_t c)
   {
-    while (c--)
+    if (!high_color_mode)
     {
-      color_t s = *(ps + (so >> 16));
-      auto index = (s >> 4) & 0x0F;
+      while (c--)
+      {
+        color_t s = *(ps + (so >> 16));
+        auto index = (s >> 4) & 0x0F;
 
-      *pd = system_palette2[screen_palette[index]];
+        *pd = system_palette2[screen_palette[index]];
 
-      // step destination and source
-      pd++;
-      so += ss;
+        // step destination and source
+        pd++;
+        so += ss;
+      }
+    }
+    else
+    {
+      while (c--)
+      {
+        color_t s = *(ps + (so >> 16));
+        auto index = (s >> 4) & 0x0F;
+
+        if (index == dontmap)
+        {
+          *pd = s | 0x00F0;
+        }
+        else
+        {
+          *pd = system_palette2[screen_palette[index]];
+        }
+
+        // step destination and source
+        pd++;
+        so += ss;
+      }
     }
   }
 
-  bool swapped_buttons = false;
-
-  const int picowidth = 136; // workaround for
-                            // screen shake issue, should be 128
-  color_t _fdp[picowidth * picowidth] __attribute__ ((aligned (4))) = { };
-  static buffer_t *PICO8SCREEN = buffer(picowidth, picowidth, _fdp);
-
   color_t getCurrentPencolor()
-  { 
+  {
     return _pen;
   }
 
- void cls(uint32_t color = 0)
+  void cls(uint32_t color = 0)
   {
     auto lastpencolor = getCurrentPencolor();
     pen(system_palette[color]);
     // pen(7,7,7);
-  	target();
+    target();
     clear();
     target(pico8::PICO8SCREEN);
     // pen(0,0,255);
@@ -310,8 +392,30 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
     {
       flags = 3;
     }
-    
-    sprite(spriteindex, x, y, cols, rows, 8 * cols, 8 * rows, flags);
+
+    if (berries == 1)
+    {
+      if (spriteindex == 26)
+      {
+        spritesheet(mountain);
+        sprite(0, x, y, cols, rows, 8 * cols, 8 * rows, flags);
+        spritesheet(celeste);
+      }
+      else if (spriteindex == 28)
+      {
+        spritesheet(mountain);
+        sprite(1, x, y, cols, rows, 8 * cols, 8 * rows, flags);
+        spritesheet(celeste);
+      }
+      else
+      {
+        sprite(spriteindex, x, y, cols, rows, 8 * cols, 8 * rows, flags);
+      }
+    }
+    else
+    {
+      sprite(spriteindex, x, y, cols, rows, 8 * cols, 8 * rows, flags);
+    }
     blend(PALETTE);
   }
 
@@ -342,9 +446,12 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
       draw_palette[c1] = c0;
       break;
     case 1:
-      if (c1 >> 4 == 0) { // normal palette
+      if (c1 >> 4 == 0)
+      { // normal palette
         screen_palette[c0] = (c1 && 0x0F);
-      } else if (c1 >> 4 == 1) { // secret palette
+      }
+      else if (c1 >> 4 == 1)
+      { // secret palette
         screen_palette[c0] = (c1 && 0x0F) + 16;
       }
       break;
@@ -362,7 +469,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
 
   void rect(int32_t x, int32_t y, int32_t x2, int32_t y2, int32_t c)
   {
-    
+
     auto lastpencolor = getCurrentPencolor();
     pen(system_palette[c]);
     picosystem::rect(x, y, x2 - x, y2 - y);
@@ -376,7 +483,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
 
   void rectfill(int32_t x, int32_t y, int32_t x2, int32_t y2, int32_t c)
   {
-    
+
     auto lastpencolor = getCurrentPencolor();
     pen(system_palette[c]);
     frect(x, y, x2 - x, y2 - y);
@@ -512,7 +619,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
   pair<int32_t, int32_t> lastline(0, 0); // PRIVATE
   void line(int32_t x0, int32_t y0, optional<int32_t> x1, optional<int32_t> y1, optional<int32_t> c)
   {
-    
+
     auto color = getCurrentPencolor();
     int32_t startx, starty, endx, endy;
     if (x1.has_value())
@@ -560,7 +667,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
   static void circ(int32_t x, int32_t y, uint32_t r, optional<uint32_t> c)
   {
     auto color = getCurrentPencolor();
-    
+
     if (c.has_value())
     {
       pen(system_palette[c.value()]);
@@ -577,7 +684,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
   static void circfill(int32_t x, int32_t y, uint32_t r, optional<uint32_t> c)
   {
     auto color = getCurrentPencolor();
-    
+
     if (c.has_value())
     {
       pen(system_palette[c.value()]);
@@ -595,7 +702,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
   static void print(string str, int32_t x, int32_t y, optional<uint32_t> c)
   {
     auto color = getCurrentPencolor();
-    
+
     if (c.has_value())
     {
       pen(system_palette[c.value()]);
@@ -604,9 +711,11 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
     pen(color); // restore previous pen color
   }
 
-  static int gettextwidth(string str) {
+  static int gettextwidth(string str)
+  {
     auto width = 0;
-    for(std::size_t i = 0; i < str.size(); i++) {
+    for (std::size_t i = 0; i < str.size(); i++)
+    {
       char c = str[i];
       width += _font[(c - 32) * 9];
     }
@@ -616,7 +725,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
   static void center(string str, int32_t y, optional<uint32_t> c)
   {
     auto color = getCurrentPencolor();
-    
+
     if (c.has_value())
     {
       pen(system_palette[c.value()]);
@@ -639,7 +748,7 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
   static void print(string str, optional<uint32_t> c)
   {
     auto color = getCurrentPencolor();
-    
+
     if (c.has_value())
     {
       pen(system_palette[c.value()]);
@@ -726,8 +835,6 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
     return btnp((int)b, (int)pl);
   }
 
-
-
   // **********************************************************************************************************************************
   // UNDER CONSTRUCTION SECTION
 
@@ -738,46 +845,87 @@ uint8_t *_minimal_font = (uint8_t *)&_minimal_font_data[0][0];
   {
   }
 
-// sfx struct to access sfx data
+  static uint_fast8_t getVolume(uint_fast8_t v) {
+    return ceil(100 / 7 * v);
+  }
 
+  static float getPitch(uint_fast8_t v) {
+    return 440.f * exp2(((float)v - 33.f) / 12.f);
+  }
 
-// play object
+  static uint_fast16_t getDuration(uint_fast8_t d) {
+    return ceil((float)d*measure);
+  }
 
-  void sfx(uint32_t n, uint32_t channel = 0, uint32_t offset = 0, uint32_t length = 255)
-  {
-    if (soundoff) {
-      return;
+  static voice_t getVoice(waveform wave, effect fx, uint_fast8_t speed) {
+    auto noise = 0;
+    auto a = 0, d = 0, s = 0, r = 0;
+    if (wave == waveform::noise) {
+      noise = 100;
     }
-    // create sfx struct
-    // create play object with sfx struct
+    if (fx == effect::fade_in) {
+      a = getDuration(speed) / 2;
+      s = getDuration(speed) / 2;
+    } else if (fx == effect::fade_out) {
+      s = getDuration(speed) / 2;
+      r = getDuration(speed) / 2;
+    } else {
+      s = getDuration(speed);
+    }
+    return voice(a,d,s,r,0,0,0,noise,0);
+  }
+
+  static void internalsfx(uint32_t n, uint32_t channel = 0, uint32_t offset = 0, uint32_t length = 255)
+  {
+    auto pattern = patterns.at(n);
+    for (auto note : pattern.notes) {
+      // Create voice
+      auto voice = getVoice(note.wave, note.fx, pattern.speed);
+      // Play voice
+      play(voice, getPitch(note.pitch), getDuration(pattern.speed), getVolume(note.volume));
+      // Wait
+      sleep_ms(getDuration(pattern.speed));
+    }
+    // play empty note to silence audio
+    play(voice(0,0,100,0,0,0,0,0,0), 0, 100, 100);
+  }
+
+  static void launchsfx() {
+    uint32_t n = multicore_fifo_pop_blocking();
+    internalsfx(n);
+  }
+
+  // int sfxqueue;
+  static void sfx(uint32_t n, uint32_t channel = 0, uint32_t offset = 0, uint32_t length = 255) {
+    if (sound == true) {
+      multicore_reset_core1();
+      multicore_launch_core1(launchsfx);
+      multicore_fifo_push_blocking(n);
+    }
   }
 
   // music will not be implemented because it would sound like crap anyway
-  // with the piezo speaker,  only one channel and waveform
+  // with the barely audible piezo speaker,  only one channel and waveform
   void music(int32_t n, uint32_t fade_len = 0, uint32_t channel_mask = 15)
   {
   }
 
-  void hudDrawing(bool active) { // inversly adjust the camera for drawing hud elements so they stay in the
-                                 // same place while moving the viewport
+  void hudDrawing(bool active)
+  { // inversly adjust the camera for drawing hud elements so they stay in the
+    // same place while moving the viewport
   }
-
-  auto celeste = buffer(128, 64, spritedata);
-
+  
   void init(bool swapped_buttons = false)
   {
     font(-1, -1, -1, _minimal_font);
     swapped_buttons = swapped_buttons;
     // set drawing region to 128x128 (visible only 120x120 controlled by system_offset and hud_offset)
     clip(0, 0, 128, 128);
-    
 
-    
     target(PICO8SCREEN);
 
     blend(PALETTE);
     spritesheet(celeste);
     pal();
   }
-
 }
