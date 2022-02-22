@@ -1678,7 +1678,7 @@ void Celeste_P8_draw() {
 	} else if (new_bg) {
 		bg_col=2;
 	}
-	pico8::rectfill(0,0,128,128,bg_col);
+	pico8::cls(bg_col);
 
 	// clouds
 	if (!is_title()) {
@@ -1951,7 +1951,7 @@ int secondaryCamera() {
  }
 }
 
-auto mountain = buffer(95, 48, mountaindata);
+// auto mountain = buffer(95, 48, mountaindata);
 
 enum setting{
 	none,
@@ -1993,6 +1993,7 @@ static uint_fast8_t backlightlevel = 75;
 
 static void return_to_game() {
 	backlightlevel = 75;
+	led(0, 0, 0);
 	picosystem::backlight(backlightlevel);
 	blend(pico8::PALETTE);
 	currentgamestate = game;
@@ -2005,7 +2006,7 @@ static void switch_to_menu() {
 	menupage = 0;
 	selectedmenuindex = 0;
 	currentgamestate = menu;
-	spritesheet(mountain);
+	spritesheet(pico8::mountain);
 }
 
 static auto menu1 = new vector<menuentry>{
@@ -2047,10 +2048,10 @@ static auto menu2 = new vector<menuentry>{
 	};
 
 static void restoresettings() {
-	if (pico8::soundoff == false) {
+	if (pico8::sound == true) {
 		menu2->at(1).selected = on;
 	}
-	if (pico8::soundoff == true) {
+	if (pico8::sound == false) {
 		menu2->at(1).selected = off;
 	}
 	if (pico8::berries == 0) {
@@ -2130,10 +2131,10 @@ static void menu_update()
 		}
 	}
 	if (menu2->at(1).selected == on) {
-		pico8::soundoff == false;
+		pico8::sound = true;
 	}
 	if (menu2->at(1).selected == off) {
-		pico8::soundoff == true;
+		pico8::sound = false;
 	}
 	if (menu2->at(2).selected == strawberry) {
 		pico8::berries = 0;
@@ -2145,9 +2146,14 @@ static void menu_update()
 	}
 }
 
-static void menu_draw()
+static void menu_draw(uint32_t tick)
 {
 	picosystem::backlight(backlightlevel);
+	if (backlightlevel == 0) { // show the led to indicate that
+		led(0, 15, 0);	// picosystem is still on when screen is "off"
+	} else {
+		led(0, 0, 0);
+	}
 	target();
 	picosystem::pen(0x00f0);
 	clear();
@@ -2247,7 +2253,7 @@ void draw(uint32_t tick)
 		viewporty = leveloffsets[level_index()][1];
 		blit(pico8::PICO8SCREEN, viewportx, viewporty, 120, 120, 0, 0);
 	} else {
-		menu_draw();
+		menu_draw(tick);
 	}
 
 	// Start Debug stats
