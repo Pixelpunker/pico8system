@@ -979,17 +979,14 @@ namespace pico8
 
   void writeSettingsToFlash()
   {
-    if (save_data[1] != (uint8_t)sound || save_data[2] != (uint8_t)berries)
-    {
-      save_data[0] = magicvalue;
-      save_data[1] = (uint8_t)sound;
-      save_data[2] = (uint8_t)berries;
-      multicore_reset_core1();
-      uint32_t ints = save_and_disable_interrupts();
-      flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE * 1);
-      flash_range_program(FLASH_TARGET_OFFSET, save_data, FLASH_PAGE_SIZE * 1);
-      restore_interrupts(ints);
-    }
+    save_data[0] = magicvalue;
+    save_data[1] = (uint8_t)sound;
+    save_data[2] = (uint8_t)berries;
+    multicore_reset_core1();
+    uint32_t ints = save_and_disable_interrupts();
+    flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE * 1);
+    flash_range_program(FLASH_TARGET_OFFSET, save_data, FLASH_PAGE_SIZE * 1);
+    restore_interrupts(ints);
   }
 
   void init(bool swapped_buttons = false)
