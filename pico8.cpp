@@ -8,7 +8,7 @@
 #include <stdio.h>
 // #include "pico/stdlib.h"
 #include "pico/multicore.h"
-#include "../pico-littlefs/littlefs-lib/pico_hal.h"
+#include "hardware/flash.h"
 
 using namespace std;
 using namespace picosystem;
@@ -18,6 +18,14 @@ using namespace picomath;
 
 namespace pico8
 {
+#define FLASH_TARGET_OFFSET (PICO_FLASH_SIZE_BYTES / 4 * 3 - FLASH_SECTOR_SIZE * 2)
+
+  const uint8_t *flash_target_contents = (const uint8_t *)(XIP_BASE + FLASH_TARGET_OFFSET);
+
+  uint8_t save_data[FLASH_PAGE_SIZE] = {123, 1, 1, 0, 0};
+
+  const uint8_t magicvalue = 123;
+
   color_t rgb2(uint16_t r, uint16_t g, uint16_t b, uint16_t a = 0xFF)
   { // PicoSystem only accepts 4 bit color values (0-15)
     return rgb(r / 16, g / 16, b / 16, a / 16);
@@ -845,40 +853,51 @@ namespace pico8
   {
   }
 
-  static uint_fast8_t getVolume(uint_fast8_t v) {
+  static uint_fast8_t getVolume(uint_fast8_t v)
+  {
     return ceil(100 / 7 * v);
   }
 
-  static float getPitch(uint_fast8_t v) {
+  static float getPitch(uint_fast8_t v)
+  {
     return 440.f * exp2(((float)v - 33.f) / 12.f);
   }
 
-  static uint_fast16_t getDuration(uint_fast8_t d) {
-    return ceil((float)d*measure);
+  static uint_fast16_t getDuration(uint_fast8_t d)
+  {
+    return ceil((float)d * measure);
   }
 
-  static voice_t getVoice(waveform wave, effect fx, uint_fast8_t speed) {
+  static voice_t getVoice(waveform wave, effect fx, uint_fast8_t speed)
+  {
     auto noise = 0;
     auto a = 0, d = 0, s = 0, r = 0;
-    if (wave == waveform::noise) {
+    if (wave == waveform::noise)
+    {
       noise = 100;
     }
-    if (fx == effect::fade_in) {
+    if (fx == effect::fade_in)
+    {
       a = getDuration(speed) / 2;
       s = getDuration(speed) / 2;
-    } else if (fx == effect::fade_out) {
+    }
+    else if (fx == effect::fade_out)
+    {
       s = getDuration(speed) / 2;
       r = getDuration(speed) / 2;
-    } else {
+    }
+    else
+    {
       s = getDuration(speed);
     }
-    return voice(a,d,s,r,0,0,0,noise,0);
+    return voice(a, d, s, r, 0, 0, 0, noise, 0);
   }
 
   static void internalsfx(uint32_t n, uint32_t channel = 0, uint32_t offset = 0, uint32_t length = 255)
   {
     auto pattern = patterns.at(n);
-    for (auto note : pattern.notes) {
+    for (auto note : pattern.notes)
+    {
       // Create voice
       auto voice = getVoice(note.wave, note.fx, pattern.speed);
       // Play voice
@@ -887,17 +906,20 @@ namespace pico8
       sleep_ms(getDuration(pattern.speed));
     }
     // play empty note to silence audio
-    play(voice(0,0,100,0,0,0,0,0,0), 0, 100, 100);
+    play(voice(0, 0, 100, 0, 0, 0, 0, 0, 0), 0, 100, 100);
   }
 
-  static void launchsfx() {
+  static void launchsfx()
+  {
     uint32_t n = multicore_fifo_pop_blocking();
     internalsfx(n);
   }
 
   // int sfxqueue;
-  static void sfx(uint32_t n, uint32_t channel = 0, uint32_t offset = 0, uint32_t length = 255) {
-    if (sound == true) {
+  static void sfx(uint32_t n, uint32_t channel = 0, uint32_t offset = 0, uint32_t length = 255)
+  {
+    if (sound == true)
+    {
       multicore_reset_core1();
       multicore_launch_core1(launchsfx);
       multicore_fifo_push_blocking(n);
@@ -914,9 +936,65 @@ namespace pico8
   { // inversly adjust the camera for drawing hud elements so they stay in the
     // same place while moving the viewport
   }
-  
+
+  void restoreSettingsFromFlash()
+  {
+    if ((uint8_t)flash_target_contents[0] == magicvalue)
+    { // we have written before and can restore settings
+      if ((uint8_t)flash_target_contents[1] == 0)
+      {
+        sound = false;
+      }
+      else if ((uint8_t)flash_target_contents[1] == 1)
+      {
+        sound = true;
+      }
+      else
+      {
+        sound = true;
+      }
+      if ((uint8_t)flash_target_contents[2] == 0)
+      {
+        berries = 0;
+        high_color_mode = false;
+      }
+      else if ((uint8_t)flash_target_contents[2] == 1)
+      {
+        berries = 1;
+        high_color_mode = true;
+      }
+      else
+      {
+        berries = 1;
+        high_color_mode = true;
+      }
+    }
+    else
+    {
+      sound = true;
+      berries = 1;
+      high_color_mode = true;
+    }
+  }
+
+  void writeSettingsToFlash()
+  {
+    if (save_data[1] != (uint8_t)sound || save_data[2] != (uint8_t)berries)
+    {
+      save_data[0] = magicvalue;
+      save_data[1] = (uint8_t)sound;
+      save_data[2] = (uint8_t)berries;
+      multicore_reset_core1();
+      uint32_t ints = save_and_disable_interrupts();
+      flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE * 1);
+      flash_range_program(FLASH_TARGET_OFFSET, save_data, FLASH_PAGE_SIZE * 1);
+      restore_interrupts(ints);
+    }
+  }
+
   void init(bool swapped_buttons = false)
   {
+    restoreSettingsFromFlash();
     font(-1, -1, -1, _minimal_font);
     swapped_buttons = swapped_buttons;
     // set drawing region to 128x128 (visible only 120x120 controlled by system_offset and hud_offset)
