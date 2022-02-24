@@ -2277,17 +2277,22 @@ void Celeste_P8__DEBUG(void)
 }
 
 // all of the global game variables; this holds the entire game state (exc. music/sounds playing)
-#define LISTGVARS(V)                                                                       \
-	V(rnd_seed_lo)                                                                         \
-	V(rnd_seed_hi)                                                                         \
-	V(room)                                                                                \
-	V(freeze)                                                                              \
-	V(shake)                                                                               \
-	V(will_restart)                                                                        \
-	V(delay_restart) V(got_fruit)                                                          \
-		V(has_dashed) V(sfx_timer) V(has_key) V(pause_player) V(flash_bg) V(music_timer)   \
-			V(new_bg) V(frames) V(seconds) V(minutes) V(deaths) V(max_djump) V(start_game) \
-				V(start_game_flash) V(clouds) V(particles) V(dead_particles) V(objects)
+#define LISTGVARS(V)                                                                   \
+	V(rnd_seed_lo)                                                                     \
+	V(rnd_seed_hi)                                                                     \
+	V(room)                                                                            \
+	V(freeze)                                                                          \
+	V(shake)                                                                           \
+	V(will_restart)                                                                    \
+	V(delay_restart)                                                                   \
+	V(got_fruit)                                                                       \
+	V(has_dashed)                                                                      \
+	V(sfx_timer)                                                                       \
+	V(has_key)                                                                         \
+	V(pause_player)                                                                    \
+	V(flash_bg) V(music_timer)                                                         \
+		V(new_bg) V(frames) V(seconds) V(minutes) V(deaths) V(max_djump) V(start_game) \
+			V(start_game_flash) V(clouds) V(particles) V(dead_particles) V(objects)
 
 size_t Celeste_P8_get_state_size(void)
 {
@@ -2410,7 +2415,6 @@ static uint_fast8_t backlightlevel = 75;
 
 static void return_to_game()
 {
-	pico8::writeSettingsToFlash();
 	backlightlevel = 75;
 	led(0, 0, 0);
 	picosystem::backlight(backlightlevel);
@@ -2439,8 +2443,7 @@ static auto menu1 = new vector<menuentry>{
 	{.text = "return to title",
 	 .selected = none,
 	 .settings = new vector<setting>{none},
-	 .a_button_action = []()
-	 { pico8::writeSettingsToFlash(); init(); }},
+	 .a_button_action = init},
 
 	{.text = "options",
 	 .selected = none,
@@ -2458,7 +2461,9 @@ static auto menu2 = new vector<menuentry>{
 	 .selected = none,
 	 .settings = new vector<setting>{none},
 	 .a_button_action = []()
-	 { menupage = 0; selectedmenuindex = 0; }},
+	 { 	pico8::writeSettingsToFlash();
+		menupage = 0;
+		selectedmenuindex = 0; }},
 
 	{.text = "sound",
 	 .selected = on,
@@ -2569,6 +2574,7 @@ static void menu_update()
 		}
 		else if (menupage == 1)
 		{
+			pico8::writeSettingsToFlash();
 			menupage = 0;
 			selectedmenuindex = 0;
 		}
@@ -2705,22 +2711,21 @@ void draw(uint32_t tick)
 	//
 
 	// Debug saving
-/* 	text(to_string(pico8::flash_target_contents[0]), 60, 86);			 // DEBUG
-	text(to_string(pico8::sound), 40, 96);								 // DEBUG
-	text(to_string(pico8::berries), 40, 106);							 // DEBUG
-	text("snd: " + to_string(pico8::flash_target_contents[1]), 60, 96);	 // DEBUG
-	text("ber: " + to_string(pico8::flash_target_contents[2]), 60, 106); // DEBUG */
-
+	/* 	text(to_string(pico8::flash_target_contents[0]), 60, 86);			 // DEBUG
+		text(to_string(pico8::sound), 40, 96);								 // DEBUG
+		text(to_string(pico8::berries), 40, 106);							 // DEBUG
+		text("snd: " + to_string(pico8::flash_target_contents[1]), 60, 96);	 // DEBUG
+		text("ber: " + to_string(pico8::flash_target_contents[2]), 60, 106); // DEBUG */
 
 	// Debug FPS
-/* 	blend(picosystem::COPY); // DEBUG
-	auto drawstat = stats.draw_us/100; // DEBUG
-	auto updatestat = stats.update_us/100; // DEBUG
-	auto combined = drawstat + updatestat; // DEBUG
-	pen(15, 0, 0); // DEBUG
+	/* 	blend(picosystem::COPY); // DEBUG
+		auto drawstat = stats.draw_us/100; // DEBUG
+		auto updatestat = stats.update_us/100; // DEBUG
+		auto combined = drawstat + updatestat; // DEBUG
+		pen(15, 0, 0); // DEBUG
 
-	text("fps: " + str(stats.fps), 60, 86); // DEBUG
-	text("draw: " + str(drawstat), 60, 94); // DEBUG
-	text("update: " + str(updatestat), 60, 102); // DEBUG
-	text("combined: " + str(combined), 60, 110); // DEBUG */
+		text("fps: " + str(stats.fps), 60, 86); // DEBUG
+		text("draw: " + str(drawstat), 60, 94); // DEBUG
+		text("update: " + str(updatestat), 60, 102); // DEBUG
+		text("combined: " + str(combined), 60, 110); // DEBUG */
 }
