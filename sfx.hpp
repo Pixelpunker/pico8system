@@ -1,10 +1,12 @@
 #include <vector>
 using namespace std;
-namespace pico8 {
+namespace pico8
+{
 
-constexpr float measure = 1000 / 128;
+  constexpr float measure = 1000 / 128;
 
-enum class waveform {
+  enum class waveform
+  {
     sine = 0,
     triangle = 1,
     sawtooth = 2,
@@ -23,7 +25,8 @@ enum class waveform {
     custom_7 = 15
   };
 
-  enum class effect {
+  enum class effect
+  {
     none = 0,
     slide = 1,
     vibrato = 2,
@@ -34,14 +37,16 @@ enum class waveform {
     arp_slow = 7
   };
 
-  struct note {
+  struct note
+  {
     uint_fast8_t pitch;
     waveform wave;
     uint_fast8_t volume;
     effect fx;
   };
 
-  struct pattern {
+  struct pattern
+  {
     uint_fast8_t editor;
     uint_fast8_t speed;
     uint_fast8_t start;
