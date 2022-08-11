@@ -41,7 +41,11 @@
 		"sstream": "cpp",
 		"stdexcept": "cpp",
 		"streambuf": "cpp",
-		"typeinfo": "cpp"
+		"typeinfo": "cpp",
+		"xmemory": "cpp",
+		"xstring": "cpp",
+		"xutility": "cpp",
+		"xhash": "cpp"
 	},
 	"python.pythonPath": "/usr/bin/python3"
 }

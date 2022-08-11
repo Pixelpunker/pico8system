@@ -213,6 +213,7 @@ namespace pico8
   static uint_fast8_t dontmap = 3; // seems like color 3 is never remapped (Alpha 48)
   static uint_fast8_t berries = 1;
   static bool sound = true;
+  static bool soundenginelaunched = false;
   static bool swapped_buttons = false;
 
   auto mountain = buffer(95, 48, mountaindata);
@@ -430,6 +431,11 @@ namespace pico8
   void spr(number spriteindex, number x, number y, number cols, number rows, bool flipx, bool flipy)
   {
     spr((int)spriteindex, (int)x, (int)y, (int)cols, (int)rows, flipx, flipy);
+  }
+
+    void spr(number spriteindex, number x, number y)
+  {
+    spr((int)spriteindex, (int)x, (int)y, (int)1, (int)1, false, false);
   }
 
   // reset palette
@@ -738,7 +744,7 @@ namespace pico8
     {
       pen(system_palette[c.value()]);
     }
-    text(str, 64 - (gettextwidth(str) / 2), y);
+    text(str, 74 - (gettextwidth(str) / 2), y);
     pen(color); // restore previous pen color
   }
 
@@ -911,17 +917,24 @@ namespace pico8
 
   static void launchsfx()
   {
-    uint32_t n = multicore_fifo_pop_blocking();
-    internalsfx(n);
+    while (true) {
+      uint32_t n = multicore_fifo_pop_blocking();
+      internalsfx(n);
+      sleep_ms(30); // sleep until just before the next frame ...
+    }
   }
 
   // int sfxqueue;
   static void sfx(uint32_t n, uint32_t channel = 0, uint32_t offset = 0, uint32_t length = 255)
   {
-    if (sound == true)
-    {
+    if (!soundenginelaunched) {
       multicore_reset_core1();
       multicore_launch_core1(launchsfx);
+      soundenginelaunched = true;
+    }
+
+    if (sound == true)
+    {
       multicore_fifo_push_blocking(n);
     }
   }

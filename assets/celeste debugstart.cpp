@@ -1,18 +1,13 @@
-#include <math.h>
-#include <string.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <array>
+#include <cmath>
+#include <memory>
 #include <vector>
+#include <string>
 #include <algorithm>
-#include <functional>
+#include <iterator>
+#include <unordered_set>
+#include <unordered_map>
 #include "pico8.cpp"
 #include "celeste.hpp"
-#include <cstdint>
-#include <climits>
-#include <unordered_map>
-#include <unordered_set>
 using namespace std;
 using namespace picosystem;
 using namespace picomath;
@@ -72,8 +67,6 @@ typedef enum
 	game = 0,
 	menu = 1
 } gamestate;
-
-static int particleindex = 0; // debug
 
 gamestate currentgamestate;
 
@@ -164,11 +157,8 @@ bool maybe();
 number appr(number val, number target, number amount);
 
 // Additions
-static int objectmasterindex = 0;
-static int objectcount = 0;
-static int particlecount = 0;
-static int deadparticlecount = 0;
-static int cloudcount = 0;
+auto objectmasterindex = 0;
+auto objectcount = 0;
 vector<int> markedfordelete;
 vector<int> markedparticlesfordelete;
 
@@ -287,15 +277,15 @@ public:
 	number w;
 	Cloud(number x, number y, number spd, number w)
 	{
-		this->x = x;
-		this->y = y;
-		this->spd = spd;
-		this->w = w;
-		cloudcount++;
+		x = x;
+		y = y;
+		spd = spd;
+		w = w;
+		objectcount++;
 	}
 	~Cloud()
 	{
-		cloudcount--;
+		objectcount--;
 	}
 };
 vector<shared_ptr<Cloud>> clouds;
@@ -312,19 +302,19 @@ public:
 	int id;
 	Particle(number x, number y, int s, number spd, number off, int c)
 	{
-		this->x = x;
-		this->y = y;
-		this->s = s;
-		this->spd = spd;
-		this->off = off;
-		this->c = c;
+		x = x;
+		y = y;
+		s = s;
+		spd = spd;
+		off = off;
+		c = c;
 		id = objectmasterindex;
 		objectmasterindex++;
-		particlecount++;
+		objectcount++;
 	}
 	~Particle()
 	{
-		particlecount--;
+		objectcount--;
 	}
 };
 vector<shared_ptr<Particle>> particles;
@@ -339,17 +329,17 @@ public:
 	Vect spd;
 	DeadParticle(number x, number y, int t, Vect spd)
 	{
-		this->x = x;
-		this->y = y;
-		this->t = t;
-		this->spd = spd;
+		x = x;
+		y = y;
+		t = t;
+		spd = spd;
 		id = objectmasterindex;
 		objectmasterindex++;
-		deadparticlecount++;
+		objectcount++;
 	}
 	~DeadParticle()
 	{
-		deadparticlecount--;
+		objectcount--;
 	}
 };
 unordered_map<int, shared_ptr<DeadParticle>> dead_particles;
@@ -397,12 +387,11 @@ void ClassicInit()
 		particles.push_back(make_shared<Particle>(
 				rnd(128),
 				rnd(128),
-				floor(rnd(5) / 4), // change addition added 2 
+				floor(rnd(5) / 4), // todo minimum size 2? was invisible in ccleste
 				0.25f + rnd(5),
 				rnd(1),
 				6 + floor(0.5f + rnd(1))));
 	}
-
 	dead_particles.clear();
 
 	title_screen();
@@ -954,9 +943,9 @@ public:
 		}
 		node(number x, number y, number size)
 		{
-			this->x = x;
-			this->y = y;
-			this->size = size;
+			x = x;
+			y = y;
+			size = size;
 		}
 	};
 
@@ -1635,10 +1624,10 @@ private:
 		number spd;
 		particle(number x, number y, number h, number spd)
 		{
-			this->x = x;
-			this->y = y;
-			this->h = h;
-			this->spd = spd;
+			x = x;
+			y = y;
+			h = h;
+			spd = spd;
 		}
 	};
 
@@ -1930,17 +1919,7 @@ void ClassicUpdate()
 	// start game
 	if (is_title())
 	{
-		//if (!start_game && (pico8::btnp(k_jump) || pico8::btnp(k_dash) || pressed(X) || pressed(Y))) // addition change was pico8::btn(k_jump) || pico8::btn(k_dash)
-		if (pressed(X)) {
-			objects.clear();
-			particles.clear();
-			dead_particles.clear();
-			clouds.clear();
-		}
-		if (pressed(Y)) {
-			particleindex++;
-		}
-		if (!start_game && (pico8::btnp(k_jump) || pico8::btnp(k_dash))) // addition change was pico8::btn(k_jump) || pico8::btn(k_dash)
+		if (!start_game && (pico8::btnp(k_jump) || pico8::btnp(k_dash) || pressed(X) || pressed(Y))) // addition change was pico8::btn(k_jump) || pico8::btn(k_dash)
 		{
 			pico8::music(-1, 0, 0);
 			start_game_flash = 50;
@@ -2019,7 +1998,7 @@ void ClassicDraw()
 	pico8::cls(bg_col); // todo for 60fps 2. draw: reuse bg_col
 
 	// clouds
-	if (true || !is_title()) // debug
+	if (!is_title())
 	{
 		for (auto &c : clouds) // todo: check all (auto &item : objects) loops
 		{
@@ -2065,9 +2044,8 @@ void ClassicDraw()
 		p->x += p->spd;
 		p->y += picomath::sin(p->off);
 		p->off += picomath::min(0.05f, p->spd / 32);
-		// pico8::rectfill(p->x, p->y, p->x + p->s, p->y + p->s, p->c);
-		pico8::rectfill(p->x, p->y, p->x + p->s, p->y + p->s, 7); // debug
-		if (p->x > 132)
+		pico8::rectfill(p->x, p->y, p->x + p->s, p->y + p->s, p->c);
+		if (p->x > 128 + 4)
 		{
 			p->x = -4;
 			p->y = rnd(128);
@@ -2088,11 +2066,8 @@ void ClassicDraw()
 	destroy_particles();
 	for (auto &p : dead_particles)
 	{
-		/*pico8::rectfill(p.second->x - p.second->t / 5, p.second->y - p.second->t / 5,
-										p.second->x + p.second->t / 5, p.second->y + p.second->t / 5, 14 + mod(p.second->t, 2));*/
-
-												pico8::rectfill(p.second->x - p.second->t / 5, p.second->y - p.second->t / 5,
-										p.second->x + p.second->t / 5, p.second->y + p.second->t / 5, 7); // debug
+		pico8::rectfill(p.second->x - p.second->t / 5, p.second->y - p.second->t / 5,
+										p.second->x + p.second->t / 5, p.second->y + p.second->t / 5, 14 + mod(p.second->t, 2));
 	}
 
 	// draw outside of the screen for screenshake
@@ -2529,29 +2504,17 @@ static void menu_draw(uint32_t tick)
 
 void init()
 {
-	picomath::pico8_srand(12);
 	pico8::init(true);
 	restoresettings();
 	currentgamestate = game;
 	ClassicInit();
 }
 
-static string errormessage;
-
 void update(uint32_t tick)
 {
 	if (currentgamestate == game)
 	{
-		try
-		{
-			ClassicUpdate();
-		}
-		catch (const std::exception &e)
-		{	psfx(54); // DEBUGPOINT
-
-			errormessage = e.what();
-		}
-
+		ClassicUpdate();
 		auto direction = movetarget.findDirection(playerx);
 		if (direction == direction::left)
 		{
@@ -2579,8 +2542,6 @@ void update(uint32_t tick)
 	}
 }
 
-
-
 void draw(uint32_t tick)
 {
 	if (currentgamestate == game)
@@ -2593,17 +2554,6 @@ void draw(uint32_t tick)
 		viewportx = secondaryCamera();
 		viewporty = leveloffsets[level_index()][1];
 		blit(pico8::PICO8SCREEN, viewportx, viewporty, 120, 120, 0, 0);
-		blend(picosystem::COPY);
-		target();
-		pen(0,0,0);
-		frect(80,20,120,50);
-		pen(0,15,0);
-		text("obj#"+to_string(objectcount), 80, 10);
-		text("prt#"+to_string(particlecount), 80, 20);
-		text("dpr#"+to_string(deadparticlecount), 80, 30);
-		text("clo#"+to_string(cloudcount), 80, 40);
-		text("p"+to_string(particleindex)+"#"+to_string((int)particles[particleindex]->x)+"/"+to_string((int)particles[particleindex]->y), 80, 50);
-		//text(to_string((int)picomath::rnd(128)), 80, 50);
 	}
 	else
 	{

@@ -61,15 +61,12 @@
 ## Version 1.0
 
 * Menu system
-  * (scanlines: on/off)
 * Run export script during build
 * ~~High color mode?~~
 * ~~Leuchtende Beeren?~~
-* Scanlines
 * B-Sides Level, nach Komplettieren von Level 16 oder Sammeln von 8 Beeren
   * heimlich starten durch X+Y statt A+B
 
 ## Marketing
-* Masters of the game can now unlock the b-sides with 31 more challenging levels!
 
 All that running on a tiny 1 $ chip.
