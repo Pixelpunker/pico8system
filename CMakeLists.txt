@@ -23,7 +23,8 @@ include(pico_sdk_import.cmake)
 project(${PROJECT_NAME} C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
-#set(PICO_CXX_ENABLE_EXCEPTIONS 1)
+set(PICO_CXX_ENABLE_EXCEPTIONS 1) # we can disable exceptions in release, only for debugging
+set(PICO_CXX_ENABLE_RTTI 1) # we need runtime type information
 
 
 # Initialize the SDK
@@ -44,8 +45,8 @@ picosystem_executable(
 
 # Set your build options here
 pixel_double(${PROJECT_NAME})          # 120x120 resolution game, pixel-doubled to 240x240
-#disable_startup_logo(${PROJECT_NAME})  # Skip the PicoSystem splash
-no_font(${PROJECT_NAME})              # Omit the default font
+disable_startup_logo(${PROJECT_NAME})  # Skip the PicoSystem splash
+#no_font(${PROJECT_NAME})              # Omit the default font
 no_spritesheet(${PROJECT_NAME})        # Omit the default spritesheet
 #no_overclock(${PROJECT_NAME})         # Don't overclock
 #fps30_mode(${PROJECT_NAME})            # For running PICO-8 ports at original speed
