@@ -1,5 +1,6 @@
 #include "picosystem.hpp"
 #include "picomath.cpp"
+#include <math.h>
 #include <optional>
 #include <array>
 #include "assets/data.h"
@@ -375,14 +376,22 @@ namespace pico8
     pen(lastpencolor);
   }
 
-  void cls(number color = 0)
+  void cls(number color = number{0})
   {
-    cls((int)color);
+    cls(color.floor());
   }
 
   // spr implementation.
-  void spr(int32_t spriteindex, int32_t x, int32_t y, int32_t cols, int32_t rows, bool flipx, bool flipy)
+  void spr(number spriteindex_, number x_, number y_, number cols_, number rows_, bool flipx_, bool flipy_)
   {
+    auto spriteindex = spriteindex_.floor();
+    auto x = x_.round();
+    auto y = y_.round();
+    auto cols = cols_.floor();
+    auto rows = rows_.floor();
+    auto flipx = flipx_;
+    auto flipy = flipy_;
+
     blend(SPRITE);
     int32_t flags = 0;
     if (!flipx & !flipy)
@@ -428,14 +437,9 @@ namespace pico8
     blend(PALETTE);
   }
 
-  void spr(number spriteindex, number x, number y, number cols, number rows, bool flipx, bool flipy)
-  {
-    spr(spriteindex.floor(), x.round(), y.round(), (int)cols, (int)rows, flipx, flipy);
-  }
-
   void spr(number spriteindex, number x, number y)
   {
-    spr(spriteindex.floor(), x.round(), y.round(), (int)1, (int)1, false, false);
+    spr(spriteindex, x, y, number{1}, number{1}, false, false);
   }
 
   // reset palette

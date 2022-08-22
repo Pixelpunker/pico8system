@@ -45,7 +45,17 @@ namespace picomath
 		inline int32_t round()
 		{
 			auto result = static_cast<int32_t>(static_cast<unsigned>(this->n) & 0xFFFF0000) / (1 << 16);
-			if (this->frac() >= 32768)
+			if (static_cast<uint16_t>(this->n) >= 32768)
+			{
+				result += 1;
+			}
+			return result;
+		}
+
+		inline int32_t ceil()
+		{
+			auto result = static_cast<int32_t>(static_cast<unsigned>(this->n) & 0xFFFF0000) / (1 << 16);
+			if (static_cast<uint16_t>(this->n) > 0)
 			{
 				result += 1;
 			}

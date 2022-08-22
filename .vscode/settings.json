@@ -45,7 +45,11 @@
 		"xmemory": "cpp",
 		"xstring": "cpp",
 		"xutility": "cpp",
-		"xhash": "cpp"
+		"xhash": "cpp",
+		"list": "cpp",
+		"unordered_set": "cpp",
+		"compare": "cpp",
+		"xtr1common": "cpp"
 	},
 	"python.pythonPath": "/usr/bin/python3"
 }

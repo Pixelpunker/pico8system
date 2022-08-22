@@ -21,46 +21,47 @@ using namespace picomath;
 
 bool error = false;
 string errormessage;
+string message2; // debug
 
 // *************************
 // * PICO8SYSTEM ADDITIONS *
 // *************************
 std::array<std::array<int, 3>, 32> leveloffsets{
-	std::array<int, 3>{5, 4, 0}, // 0
-	std::array<int, 3>{5, 4, 0}, // 1
-	std::array<int, 3>{5, 4, 0}, // 2
-	std::array<int, 3>{5, 4, 1}, // 3
-	std::array<int, 3>{5, 4, 1}, // 4
-	std::array<int, 3>{5, 4, 0}, // 5
-	std::array<int, 3>{5, 4, 0}, // 6
-	std::array<int, 3>{5, 4, 1}, // 7
-	std::array<int, 3>{5, 4, 1}, // 8
-	std::array<int, 3>{5, 4, 0}, // 9
-	std::array<int, 3>{5, 6, 1}, // 10
-	std::array<int, 3>{5, 4, 0}, // 11
-	std::array<int, 3>{5, 4, 1}, // 12
-	std::array<int, 3>{5, 4, 1}, // 13
-	std::array<int, 3>{5, 4, 0}, // 14
-	std::array<int, 3>{5, 4, 1}, // 15
-	std::array<int, 3>{5, 4, 1}, // 16
-	std::array<int, 3>{5, 4, 1}, // 17
-	std::array<int, 3>{5, 4, 1}, // 18
-	std::array<int, 3>{5, 4, 1}, // 19
-	std::array<int, 3>{5, 4, 1}, // 20
-	std::array<int, 3>{5, 4, 1}, // 21
-	std::array<int, 3>{5, 4, 0}, // 22
-	std::array<int, 3>{5, 4, 0}, // 23
-	std::array<int, 3>{5, 4, 1}, // 24
-	std::array<int, 3>{5, 4, 1}, // 25
-	std::array<int, 3>{5, 4, 1}, // 26
-	std::array<int, 3>{5, 4, 1}, // 27
-	std::array<int, 3>{5, 4, 1}, // 28
-	std::array<int, 3>{5, 6, 1}, // 29
-	std::array<int, 3>{5, 8, 0}, // 30
-	std::array<int, 3>{5, 4, 0}	 // 31 (Title screen)
+		std::array<int, 3>{5, 4, 0}, // 0
+		std::array<int, 3>{5, 4, 0}, // 1
+		std::array<int, 3>{5, 4, 0}, // 2
+		std::array<int, 3>{5, 4, 1}, // 3
+		std::array<int, 3>{5, 4, 1}, // 4
+		std::array<int, 3>{5, 4, 0}, // 5
+		std::array<int, 3>{5, 4, 0}, // 6
+		std::array<int, 3>{5, 4, 1}, // 7
+		std::array<int, 3>{5, 4, 1}, // 8
+		std::array<int, 3>{5, 4, 0}, // 9
+		std::array<int, 3>{5, 6, 1}, // 10
+		std::array<int, 3>{5, 4, 0}, // 11
+		std::array<int, 3>{5, 4, 1}, // 12
+		std::array<int, 3>{5, 4, 1}, // 13
+		std::array<int, 3>{5, 4, 0}, // 14
+		std::array<int, 3>{5, 4, 1}, // 15
+		std::array<int, 3>{5, 4, 1}, // 16
+		std::array<int, 3>{5, 4, 1}, // 17
+		std::array<int, 3>{5, 4, 1}, // 18
+		std::array<int, 3>{5, 4, 1}, // 19
+		std::array<int, 3>{5, 4, 1}, // 20
+		std::array<int, 3>{5, 4, 1}, // 21
+		std::array<int, 3>{5, 4, 0}, // 22
+		std::array<int, 3>{5, 4, 0}, // 23
+		std::array<int, 3>{5, 4, 1}, // 24
+		std::array<int, 3>{5, 4, 1}, // 25
+		std::array<int, 3>{5, 4, 1}, // 26
+		std::array<int, 3>{5, 4, 1}, // 27
+		std::array<int, 3>{5, 4, 1}, // 28
+		std::array<int, 3>{5, 6, 1}, // 29
+		std::array<int, 3>{5, 8, 0}, // 30
+		std::array<int, 3>{5, 4, 0}	 // 31 (Title screen)
 };
 
-number playerx;
+number playerx = number{0};
 
 int viewportx = 0;
 int viewporty = 0;
@@ -88,7 +89,7 @@ static struct
 		auto framedelay = 0;
 		auto direction = direction::neutral;
 		this->x0 = 0;
-		this->x1 = (int)playerx;
+		this->x1 = playerx.round();
 		if (this->x1 > this->x0 + framedelay)
 		{
 			direction = direction::right;
@@ -169,6 +170,8 @@ number appr(number val, number target, number amount);
 
 // Additions
 auto objectcount = 0;
+auto particleindex = 0;
+auto objectindex = 0;
 vector<int8_t> markedfordelete;
 vector<int8_t> markedparticlesfordelete;
 
@@ -234,7 +237,7 @@ struct Vect
 
 struct Rectangle
 {
-	number x, y, Width, Height;
+	number x = number{0}, y = number{0}, Width = number{0}, Height = number{0};
 	Rectangle(number x_, number y_, number Width_, number Height_)
 	{
 		x = x_;
@@ -247,18 +250,18 @@ struct Rectangle
 Point room;
 unordered_map<int, shared_ptr<ClassicObject>> objects;
 shared_ptr<player_hair> hair;
-number freeze;
-number shake;
-bool will_restart;
-number delay_restart;
+number freeze = number{0};
+number shake = number{0};
+bool will_restart = false;
+number delay_restart  = number{0};
 unordered_set<int> got_fruit;
-bool has_dashed;
-number sfx_timer;
-bool has_key;
-bool pause_player;
-bool flash_bg;
-number music_timer;
-bool new_bg;
+bool has_dashed = false;
+number sfx_timer  = number{0};
+bool has_key = false;
+bool pause_player = false;
+bool flash_bg = false;
+number music_timer = number{0};
+bool new_bg = false;
 
 int k_left = 0;
 int k_right = 1;
@@ -267,13 +270,13 @@ int k_down = 3;
 int k_jump = 5; // CHANGE was 4
 int k_dash = 4; // CHANGE was number{5}
 
-number frames;
-number seconds;
-number minutes;
-number deaths;
-number max_djump;
-bool start_game;
-number start_game_flash;
+number frames  = number{0};
+number seconds = number{0};
+number minutes = number{0};
+number deaths = number{0};
+number max_djump = number{0};
+bool start_game = false;
+number start_game_flash = number{0};
 
 // ***
 
@@ -282,10 +285,10 @@ number start_game_flash;
 class Cloud
 {
 public:
-	number x;
-	number y;
-	number spd;
-	number w;
+	number x = number{0};
+	number y = number{0};
+	number spd = number{0};
+	number w = number{0};
 	Cloud(number x_, number y_, number spd_, number w_)
 	{
 		x = x_;
@@ -304,13 +307,12 @@ vector<shared_ptr<Cloud>> clouds;
 class Particle
 {
 public:
-	number x;
-	number y;
-	number s;
-	number spd;
-	number off;
-	number c;
-	int id;
+	number x = number{0};
+	number y = number{0};
+	number s = number{0};
+	number spd = number{0};
+	number off = number{0};
+	number c = number{0};
 	Particle(number x_, number y_, number s_, number spd_, number off_, number c_)
 	{
 		x = x_;
@@ -328,18 +330,19 @@ public:
 };
 vector<shared_ptr<Particle>> particles;
 
-auto particleindex = 0;
 
 class DeadParticle
 {
 public:
-	number x;
-	number y;
-	number t;
+	number x = number{0};
+	number y = number{0};
+	number t = number{0};
 	int id;
 	Vect spd;
 	DeadParticle()
 	{
+		id = particleindex;
+		particleindex += 1;
 		objectcount += 1;
 	}
 	DeadParticle(number x_, number y_, number t_, Vect spd_)
@@ -348,15 +351,13 @@ public:
 		y = y_;
 		t = t_;
 		spd = spd_;
-		id = particleindex;
-		particleindex += 1;
 	}
 	~DeadParticle()
 	{
 		objectcount -= 1;
 	}
 };
-unordered_map<int, shared_ptr<DeadParticle>> dead_particles;
+unordered_map<int8_t, shared_ptr<DeadParticle>> dead_particles;
 
 // *** entry point
 
@@ -389,22 +390,22 @@ void ClassicInit()
 	for (auto i = 0; i <= 16; i++)
 	{
 		clouds.push_back(make_shared<Cloud>(
-			rnd(number{128}),
-			rnd(number{128}),
-			number{1} + rnd(number{4}),
-			number{32} + rnd(number{32})));
+				rnd(number{128}),
+				rnd(number{128}),
+				number{1} + rnd(number{4}),
+				number{32} + rnd(number{32})));
 	}
 	particles.clear();
 	particles.reserve(50);
 	for (auto i = 0; i <= 32; i++)
 	{
 		particles.push_back(make_shared<Particle>(
-			rnd(number{128}),
-			rnd(number{128}),
-			number{1} + floor(rnd(number{5}) / number{4}), // change addition added 2
-			number{0.25} + rnd(number{5}),
-			rnd(number{1}),
-			number{6} + floor(number{0.5} + rnd(number{1}))));
+				rnd(number{128}),
+				rnd(number{128}),
+				number{1} + floor(rnd(number{5}) / number{4}), // change addition added 2
+				number{0.25} + rnd(number{5}),
+				rnd(number{1}),
+				number{6} + floor(number{0.5} + rnd(number{1}))));
 	}
 
 	dead_particles.clear();
@@ -436,21 +437,19 @@ void begin_game()
 	load_room(0, 0);
 }
 
-int level_index()
+number level_index()
 {
-	return room.x % 8 + room.y * 8;
+	return mod(room.x, number{8}) + room.y * number{8};
 }
 
 bool is_title()
 {
-	return level_index() == 31;
+	return level_index() == number{31};
 }
 
 // ***
 
 // *** object functions
-
-auto objectindex = 0;
 
 class ClassicObject
 {
@@ -459,11 +458,11 @@ public:
 	ObjType type;
 	bool collideable = true;
 	bool solids = true;
-	number spr;
-	bool flipX;
-	bool flipY;
-	number x;
-	number y;
+	number spr = number{0};
+	bool flipX = false;
+	bool flipY = false;
+	number x = number{0};
+	number y = number{0};
 	Rectangle hitbox = Rectangle(number{0}, number{0}, number{8}, number{8});
 	Vect spd = Vect(number{0}, number{0});
 	Vect rem = Vect(number{0}, number{0});
@@ -499,8 +498,8 @@ public:
 			return true;
 		}
 		return solid_at(x + hitbox.x + ox, y + hitbox.y + oy, hitbox.Width, hitbox.Height) ||
-			   check(ObjType::Fall_Floor, ox, oy) ||
-			   check(ObjType::Fake_Wall, ox, oy);
+					 check(ObjType::Fall_Floor, ox, oy) ||
+					 check(ObjType::Fake_Wall, ox, oy);
 	}
 
 	bool is_ice(number ox, number oy)
@@ -516,10 +515,10 @@ public:
 		{
 			auto other = otherpair.second;
 			if (other->type == newtype && other.get() != this && other->collideable &&
-				other->x + other->hitbox.x + other->hitbox.Width > x + hitbox.x + ox &&
-				other->y + other->hitbox.y + other->hitbox.Height > y + hitbox.y + oy &&
-				other->x + other->hitbox.x < x + hitbox.x + hitbox.Width + ox &&
-				other->y + other->hitbox.y < y + hitbox.y + hitbox.Height + oy)
+					other->x + other->hitbox.x + other->hitbox.Width > x + hitbox.x + ox &&
+					other->y + other->hitbox.y + other->hitbox.Height > y + hitbox.y + oy &&
+					other->x + other->hitbox.x < x + hitbox.x + hitbox.Width + ox &&
+					other->y + other->hitbox.y < y + hitbox.y + hitbox.Height + oy)
 				return other;
 		}
 		return nullptr;
@@ -551,7 +550,7 @@ public:
 		if (solids)
 		{
 			auto step = sign(amount);
-			for (auto i = (int)start; i <= (int)picomath::abs(amount); i += 1)
+			for (auto i = start; i <= picomath::abs(amount); i += number{1})
 			{
 				if (!is_solid(step, number{0}))
 					x += step;
@@ -572,7 +571,7 @@ public:
 		if (solids)
 		{
 			auto step = sign(amount);
-			for (auto i = 0; i <= (int)picomath::abs(amount); i += 1)
+			for (auto i = number{0}; i <= picomath::abs(amount); i += number{1})
 				if (!is_solid(number{0}, step))
 					y += step;
 				else
@@ -593,7 +592,7 @@ T init_object(number x, number y, optional<number> tile = nullopt)
 	auto obj = make_shared<T>();
 	if (tile.has_value())
 	{
-		obj->spr = (number)tile.value();
+		obj->spr = tile.value();
 	}
 	obj->x = x;
 	obj->y = y;
@@ -635,7 +634,7 @@ void destroy_particles()
 void psfx(number num)
 {
 	if (sfx_timer <= number{0})
-		pico8::sfx((int)num);
+		pico8::sfx(num.floor());
 }
 
 // *** objects
@@ -864,7 +863,7 @@ public:
 				dash_effect_time = number{10};
 
 				auto dash_x_input = (pico8::btn(k_left) ? number{-1} : (pico8::btn(k_right) ? number{1} : number{0})); // todo check again
-				auto dash_y_input = (pico8::btn(k_up) ? number{-1} : (pico8::btn(k_down) ? number{1} : number{0}));	   // todo check again
+				auto dash_y_input = (pico8::btn(k_up) ? number{-1} : (pico8::btn(k_down) ? number{1} : number{0}));		 // todo check again
 
 				if (dash_x_input != number{0} && dash_y_input != number{0})
 				{
@@ -997,10 +996,10 @@ void kill_player(player &obj)
 	{
 		auto angle = (dir / number{8.0});
 		auto dead_particle = make_shared<DeadParticle>(
-			obj.x + number{4},
-			obj.y + number{4},
-			10,
-			Vect(picomath::cos(angle) * number{3}, picomath::sin(angle + number{0.5}) * number{3}));
+				obj.x + number{4},
+				obj.y + number{4},
+				10,
+				Vect(picomath::cos(angle) * number{3}, picomath::sin(angle + number{0.5}) * number{3}));
 		dead_particles.emplace(dead_particle->id, dead_particle);
 	}
 
@@ -1012,7 +1011,7 @@ void draw_player(ClassicObject &obj, number djump)
 	auto spritePush = number{0};
 	if (djump == number{2})
 	{
-		if (floor(mod((frames / number{3}), number{2})) == number{0})
+		if (mod((frames / number{3}), number{2}).floor() == 0)
 			spritePush = number{10} * number{16};
 		else
 			spritePush = number{9} * number{16};
@@ -1021,7 +1020,6 @@ void draw_player(ClassicObject &obj, number djump)
 	{
 		spritePush = number{8} * number{16};
 	}
-
 	pico8::spr(obj.spr + spritePush, obj.x, obj.y, number{1}, number{1}, obj.flipX, obj.flipY);
 }
 
@@ -1318,7 +1316,7 @@ public:
 			hit->djump = max_djump;
 			sfx_timer = number{20};
 			pico8::sfx(13);
-			got_fruit.insert(1 + (int)level_index());
+			got_fruit.insert(1 + level_index().floor());
 			init_object<lifeup>(x, y);
 			markfordelete(*this);
 			// Stats.Increment(Stat.PICO_BERRIES);
@@ -1379,7 +1377,7 @@ public:
 			hit->djump = max_djump;
 			sfx_timer = number{20};
 			pico8::sfx(13);
-			got_fruit.insert(1 + (int)level_index());
+			got_fruit.insert(1 + level_index().floor());
 			init_object<lifeup>(x, y);
 			markfordelete(*this);
 			// Stats.Increment(Stat.PICO_BERRIES);
@@ -1682,10 +1680,10 @@ public:
 			if (timer <= number{45} && particles.size() < number{50})
 			{
 				particles.push_back(make_shared<particle>(
-					number{1} + rnd(number{14}),
-					number{0},
-					number{32} + rnd(number{32}),
-					number{8} + rnd(number{8})));
+						number{1} + rnd(number{14}),
+						number{0},
+						number{32} + rnd(number{32}),
+						number{8} + rnd(number{8})));
 			}
 			if (timer < number{0})
 			{
@@ -1734,9 +1732,9 @@ public:
 		{
 			pico8::rectfill(number{32}, number{2}, number{96}, number{31}, number{0});
 			pico8::spr(number{26}, number{55}, number{6});
-			pico8::print("x" + to_string((int)score), number{64}, number{9}, number{7});
+			pico8::print("x" + to_string(score.floor()), number{64}, number{9}, number{7});
 			draw_time(number{49}, number{16});
-			pico8::print("deaths:" + to_string((int)deaths), number{48}, number{24}, number{7});
+			pico8::print("deaths:" + to_string(deaths.floor()), number{48}, number{24}, number{7});
 		}
 		else if (check(ObjType::Player, number{0}, number{0}))
 		{
@@ -1771,7 +1769,7 @@ public:
 			else
 			{
 				auto level = (number{1} + level_index()) * number{100};
-				pico8::print((int)level + "m", number{52} + (level < number{1000} ? number{2} : number{0}), number{62}, number{7});
+				pico8::print(level.floor() + "m", number{52} + (level < number{1000} ? number{2} : number{0}), number{62}, number{7});
 			}
 
 			draw_time(number{4}, number{4});
@@ -1844,7 +1842,7 @@ void load_room(int x, int y)
 					init_object<big_chest>(tx * number{8}, ty * number{8}, tile);
 				else if (tile == number{118})
 					init_object<flag>(tx * number{8}, ty * number{8}, tile);
-				else if (got_fruit.find((int)(number{1} + level_index())) != got_fruit.end()) // todo check if this find really works
+				else if (got_fruit.find((number{1} + level_index()).floor()) != got_fruit.end()) // todo check if this find really works
 				{
 					if (tile == number{26})
 						init_object<fruit>(tx * number{8}, ty * number{8}, tile);
@@ -1865,7 +1863,7 @@ void load_room(int x, int y)
 		init_object<room_title>(number{0}, number{0});
 
 	// ADDITION
-	movetarget.target1 = leveloffsets[(int)level_index()][0];
+	movetarget.target1 = leveloffsets[level_index().floor()][0];
 	// END ADDITION
 }
 
@@ -2040,7 +2038,7 @@ void ClassicDraw()
 	destroy_objects();
 	for (auto &obj : objects)
 	{
-		if (obj.second->type == ObjType::Platform && !(obj.second->type == ObjType::Big_Chest))
+		if (obj.second->type != ObjType::Platform && obj.second->type != ObjType::Big_Chest)
 			obj.second->draw();
 	}
 
@@ -2076,7 +2074,7 @@ void ClassicDraw()
 	for (auto &p : dead_particles)
 	{
 		pico8::rectfill(p.second->x - p.second->t / number{5}, p.second->y - p.second->t / number{5},
-						p.second->x + p.second->t / number{5}, p.second->y + p.second->t / number{5}, number{14} + mod(p.second->t, number{2}));
+										p.second->x + p.second->t / number{5}, p.second->y + p.second->t / number{5}, number{14} + mod(p.second->t, number{2}));
 	}
 
 	// draw outside of the screen for screenshake
@@ -2206,14 +2204,14 @@ static struct
 		viewportx = this->x;
 	};
 } cam = {
-	.x = 5,
-	.state = neutral,
-	.target = 5};
+		.x = 5,
+		.state = neutral,
+		.target = 5};
 
 // only move camera at all if camera is set to movable
 int secondaryCamera()
 {
-	auto currentoffsets = leveloffsets[level_index()];
+	auto currentoffsets = leveloffsets[level_index().floor()];
 	if (currentoffsets[2] == 1)
 	{
 		return cam.x;
@@ -2287,45 +2285,45 @@ static void switch_to_menu()
 }
 
 static auto menu1 = new vector<menuentry>{
-	{.text = "resume",
-	 .selected = none,
-	 .settings = new vector<setting>{none},
-	 .a_button_action = return_to_game},
+		{.text = "resume",
+		 .selected = none,
+		 .settings = new vector<setting>{none},
+		 .a_button_action = return_to_game},
 
-	{.text = "return to title",
-	 .selected = none,
-	 .settings = new vector<setting>{none},
-	 .a_button_action = init},
+		{.text = "return to title",
+		 .selected = none,
+		 .settings = new vector<setting>{none},
+		 .a_button_action = init},
 
-	{.text = "options",
-	 .selected = none,
-	 .settings = new vector<setting>{none},
-	 .a_button_action = []()
-	 { menupage = 1; selectedmenuindex = 0; }},
+		{.text = "options",
+		 .selected = none,
+		 .settings = new vector<setting>{none},
+		 .a_button_action = []()
+		 { menupage = 1; selectedmenuindex = 0; }},
 
-	{.text = "credits",
-	 .selected = none,
-	 .settings = new vector<setting>{none},
-	 .a_button_action = []()
-	 { menupage = 2; selectedmenuindex = 0; }}};
+		{.text = "credits",
+		 .selected = none,
+		 .settings = new vector<setting>{none},
+		 .a_button_action = []()
+		 { menupage = 2; selectedmenuindex = 0; }}};
 static auto menu2 = new vector<menuentry>{
-	{.text = "back",
-	 .selected = none,
-	 .settings = new vector<setting>{none},
-	 .a_button_action = []()
-	 { 	pico8::writeSettingsToFlash();
+		{.text = "back",
+		 .selected = none,
+		 .settings = new vector<setting>{none},
+		 .a_button_action = []()
+		 { 	pico8::writeSettingsToFlash();
 		menupage = 0;
 		selectedmenuindex = 0; }},
 
-	{.text = "sound",
-	 .selected = on,
-	 .settings = new vector<setting>{off, on},
-	 .a_button_action = []() {}},
+		{.text = "sound",
+		 .selected = on,
+		 .settings = new vector<setting>{off, on},
+		 .a_button_action = []() {}},
 
-	{.text = "fruit",
-	 .selected = raspberry,
-	 .settings = new vector<setting>{strawberry, raspberry},
-	 .a_button_action = []() {}}};
+		{.text = "fruit",
+		 .selected = raspberry,
+		 .settings = new vector<setting>{strawberry, raspberry},
+		 .a_button_action = []() {}}};
 
 static void restoresettings()
 {
@@ -2452,7 +2450,7 @@ static void menu_draw(uint32_t tick)
 {
 	picosystem::backlight(backlightlevel);
 	if (backlightlevel == 0)
-	{				   // show the led to indicate that
+	{								 // show the led to indicate that
 		led(0, 15, 0); // picosystem is still on when screen is "off"
 	}
 	else
@@ -2558,6 +2556,9 @@ void update(uint32_t tick)
 	{
 		errormessage = e.what();
 		error = true;
+		pen(0, 15, 0, 15);
+		target();
+		text(errormessage, 5, 40);
 	}
 }
 
@@ -2565,7 +2566,7 @@ void draw(uint32_t tick)
 {
 	if (error)
 	{
-		pen(0, 15, 0);
+		pen(0, 15, 0, 15);
 		target();
 		text(errormessage, 5, 40);
 		return; // stop drawing.
@@ -2581,16 +2582,13 @@ void draw(uint32_t tick)
 			target();
 			blend(pico8::CONVERT);
 			viewportx = secondaryCamera();
-			viewporty = leveloffsets[level_index()][1];
+			viewporty = leveloffsets[level_index().floor()][1];
 			blit(pico8::PICO8SCREEN, viewportx, viewporty, 120, 120, 0, 0);
 			blend(picosystem::COPY);
 			target();
-			pen(0, 0, 0);
-			frect(80, 20, 120, 50);
-			pen(0, 15, 0);
-			text("obj#" + to_string(objectcount), 80, 10);
-			text("p" + to_string(particleindex) + "#" + to_string((int)particles[particleindex]->x) + "/" + to_string((int)particles[particleindex]->y), 80, 50);
-			// text(to_string((int)picomath::rnd(128)), 80, 50);
+			pen(15, 15, 15, 15);
+			text("obj#" + to_string(objectcount), 0, 0);
+			text(message2, 0, 10);
 		}
 		else
 		{
@@ -2599,7 +2597,7 @@ void draw(uint32_t tick)
 	}
 	catch (const std::exception &e)
 	{
-		pen(0, 15, 0);
+		pen(0, 15, 0, 15);
 		target();
 		text(e.what(), 5, 40);
 		error = true;
