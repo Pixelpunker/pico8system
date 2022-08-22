@@ -37,6 +37,21 @@ namespace picomath
 		// fractional part
 		inline uint16_t frac() { return static_cast<uint16_t>(this->n); }
 
+		inline int32_t floor()
+		{
+			return static_cast<int32_t>(static_cast<unsigned>(this->n) & 0xFFFF0000) / (1 << 16);
+		}
+
+		inline int32_t round()
+		{
+			auto result = static_cast<int32_t>(static_cast<unsigned>(this->n) & 0xFFFF0000) / (1 << 16);
+			if (this->frac() >= 32768)
+			{
+				result += 1;
+			}
+			return result;
+		}
+
 		// T -> number
 		template <typename T>
 		static inline number from(T n) { return number::from_bits(n * T(FACTOR)); }
@@ -109,7 +124,8 @@ namespace picomath
 		return number::from_bits(-sin_tbl[0x2000 - index]);
 	}
 
-	static number cos(number x) {
+	static number cos(number x)
+	{
 		return sin(x + 0.25f); // cos(x) = sin(x+pi/2)
 	}
 
@@ -117,6 +133,7 @@ namespace picomath
 	{
 		return static_cast<int32_t>(static_cast<unsigned>(x.n) & 0xFFFF0000) / (1 << 16);
 	}
+
 	static number min(number a, number b)
 	{
 		return a > b ? b : a;

@@ -600,6 +600,7 @@ T init_object(number x, number y, optional<number> tile = nullopt)
 	auto convertedobj = static_pointer_cast<ClassicObject>(obj);
 	objects.emplace(convertedobj->id, convertedobj);
 	auto convertback = static_pointer_cast<T>(objects[convertedobj->id]);
+	convertback->init();
 	return *convertback.get();
 }
 
@@ -1939,7 +1940,7 @@ void ClassicUpdate()
 	{
 		start_game_flash -= number{1};
 		if (start_game_flash <= number{-30})
-		begin_game();
+			begin_game();
 	}
 }
 

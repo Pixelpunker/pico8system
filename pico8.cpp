@@ -430,12 +430,12 @@ namespace pico8
 
   void spr(number spriteindex, number x, number y, number cols, number rows, bool flipx, bool flipy)
   {
-    spr((int)spriteindex, (int)x, (int)y, (int)cols, (int)rows, flipx, flipy);
+    spr(spriteindex.floor(), x.round(), y.round(), (int)cols, (int)rows, flipx, flipy);
   }
 
-    void spr(number spriteindex, number x, number y)
+  void spr(number spriteindex, number x, number y)
   {
-    spr((int)spriteindex, (int)x, (int)y, (int)1, (int)1, false, false);
+    spr(spriteindex.floor(), x.round(), y.round(), (int)1, (int)1, false, false);
   }
 
   // reset palette
@@ -917,7 +917,8 @@ namespace pico8
 
   static void launchsfx()
   {
-    while (true) {
+    while (true)
+    {
       uint32_t n = multicore_fifo_pop_blocking();
       internalsfx(n);
       sleep_ms(30); // sleep until just before the next frame ...
@@ -927,7 +928,8 @@ namespace pico8
   // int sfxqueue;
   static void sfx(uint32_t n, uint32_t channel = 0, uint32_t offset = 0, uint32_t length = 255)
   {
-    if (!soundenginelaunched) {
+    if (!soundenginelaunched)
+    {
       multicore_reset_core1();
       multicore_launch_core1(launchsfx);
       soundenginelaunched = true;
