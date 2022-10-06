@@ -193,6 +193,8 @@ enum class ObjType
 	Room_Title,
 };
 
+vector<tuple<ObjType, number, number>> objectstocreate;
+
 // End additions
 
 // *** "global" variables
@@ -250,7 +252,11 @@ number freeze = number{0};
 number shake = number{0};
 bool will_restart = false;
 number delay_restart = number{0};
-unordered_set<int> got_fruit;
+array<bool, 32> got_fruit;
+void reset_fruit()
+{
+	got_fruit = {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false};
+}
 bool has_dashed = false;
 number sfx_timer = number{0};
 bool has_key = false;
@@ -358,7 +364,7 @@ void ClassicInit()
 	freeze = number{0};
 	will_restart = false;
 	delay_restart = number{0};
-	got_fruit.clear();
+	reset_fruit();
 	has_dashed = false;
 	sfx_timer = number{0};
 	has_key = false;
@@ -404,8 +410,7 @@ void ClassicInit()
 
 void title_screen()
 {
-	got_fruit.clear();
-	got_fruit.reserve(30);
+	reset_fruit();
 	frames = number{0};
 	deaths = number{0};
 	max_djump = number{1};
@@ -500,7 +505,7 @@ public:
 	}
 	shared_ptr<ClassicObject> collide(ObjType newtype, number ox, number oy)
 	{
-		destroy_objects(); // destroy objects already marked for delete
+		// destroy_objects(); // destroy objects already marked for delete
 		// reflection is really slow so we use the type enum to check if two classic objects are of the same subtype
 		for (const auto &otherpair : objects)
 		{
@@ -578,9 +583,8 @@ public:
 };
 
 template <class T>
-T init_object(number x, number y, optional<number> tile = nullopt, optional<bool> isSpring = nullopt)
+void init_object(number x, number y, optional<number> tile = nullopt, optional<bool> isSpring = nullopt, optional<number> direction = nullopt)
 {
-	destroy_objects();
 	auto obj = make_shared<T>();
 	if (tile.has_value())
 	{
@@ -596,7 +600,7 @@ T init_object(number x, number y, optional<number> tile = nullopt, optional<bool
 	objects.emplace(convertedobj->id, convertedobj);
 	auto convertback = static_pointer_cast<T>(objects[convertedobj->id]);
 	convertback->init();
-	return *convertback.get();
+	// return *convertback.get();
 }
 
 void markfordelete(int id)
@@ -611,16 +615,41 @@ void markparticlesfordelete(int id)
 
 void destroy_objects(bool all)
 {
+	if (all == true)
+	{
+		objects.clear();
+		hair.reset();
+		markedfordelete.clear();
+		objectstocreate.clear();
+		return;
+	}
+
 	for (auto todelete : markedfordelete)
 	{
 		objects.erase(todelete);
 	}
 	markedfordelete.clear();
-	if (all)
+
+	// add new objects
+	for (auto tocreate : objectstocreate)
 	{
-		objects.clear();
-		hair.reset();
+		if (get<0>(tocreate) == ObjType::Smoke)
+		{
+			init_object<smoke>(get<1>(tocreate), get<2>(tocreate));
+		}
+		else if (get<0>(tocreate) == ObjType::Player)
+		{
+			for (auto obj : objects)
+			{
+				if (obj.second->type == ObjType::Player_Spawn)
+				{
+					objects.erase(obj.first);
+				}
+			}
+			init_object<player>(get<1>(tocreate), get<2>(tocreate));
+		}
 	}
+	objectstocreate.clear();
 }
 
 void destroy_particles(bool all = 0)
@@ -775,7 +804,7 @@ public:
 
 		// smoke particles
 		if (on_ground && !was_on_ground)
-			init_object<smoke>(x, y + number{4});
+			objectstocreate.push_back(make_tuple(ObjType::Smoke, x, y + number{4}));
 
 		auto jump = pico8::btnp(k_jump) && !p_jump; // change addition, was btn(k_jump)
 		p_jump = pico8::btn(k_jump);
@@ -806,7 +835,7 @@ public:
 		dash_effect_time -= number{1};
 		if (dash_time > number{0} && has_dashed)
 		{
-			init_object<smoke>(x, y);
+			objectstocreate.push_back(make_tuple(ObjType::Smoke, x, y));
 			dash_time -= number{1};
 			spd.x = appr(spd.x, dash_target.x, dash_accel.x);
 			spd.y = appr(spd.y, dash_target.y, dash_accel.y);
@@ -848,7 +877,7 @@ public:
 			{
 				maxfall = number{0.4};
 				if (rnd(number{10}) < number{2})
-					init_object<smoke>(x + input * number{6}, y);
+					objectstocreate.push_back(make_tuple(ObjType::Smoke, x + input * number{6}, y));
 			}
 
 			if (!on_ground)
@@ -864,7 +893,7 @@ public:
 					jbuffer = number{0};
 					grace = number{0};
 					spd.y = number{-2};
-					init_object<smoke>(x, y + number{4});
+					objectstocreate.push_back(make_tuple(ObjType::Smoke, x, y + number{4}));
 				}
 				else
 				{
@@ -877,7 +906,7 @@ public:
 						spd.y = number{-2};
 						spd.x = -wall_dir * (maxrun + number{1});
 						if (is_ice(wall_dir * number{3}, number{0}))
-							init_object<smoke>(x + wall_dir * number{6}, y);
+							objectstocreate.push_back(make_tuple(ObjType::Smoke, x + wall_dir * number{6}, y));
 					}
 				}
 			}
@@ -888,7 +917,7 @@ public:
 
 			if (djump > number{0} && dash)
 			{
-				init_object<smoke>(x, y);
+				objectstocreate.push_back(make_tuple(ObjType::Smoke, x, y));
 				djump -= number{1};
 				dash_time = number{4};
 				has_dashed = true;
@@ -931,7 +960,7 @@ public:
 			else if (dash && djump <= number{0})
 			{
 				psfx(number{9});
-				init_object<smoke>(x, y);
+				objectstocreate.push_back(make_tuple(ObjType::Smoke, x, y));
 			}
 		}
 
@@ -1086,7 +1115,7 @@ public:
 				state = number{2};
 				delay = number{5};
 				shake = number{5};
-				init_object<smoke>(x, y + number{4});
+				objectstocreate.push_back(make_tuple(ObjType::Smoke, x, y + number{4}));
 				pico8::sfx(5);
 			}
 		}
@@ -1098,7 +1127,7 @@ public:
 			if (delay < number{0})
 			{
 				markfordelete(this->id);
-				init_object<player>(x, y);
+				objectstocreate.push_back(make_tuple(ObjType::Player, x, y));
 			}
 		}
 	}
@@ -1150,7 +1179,7 @@ public:
 			psfx(number{15});
 			this->state = number{1};
 			this->delay = number{15}; // how long until it falls
-			init_object<smoke>(this->x, this->y);
+			objectstocreate.push_back(make_tuple(ObjType::Smoke, x, y));
 			auto hit = static_pointer_cast<fall_floor_spring>(this->collide(ObjType::Spring, number{0}, number{-1}));
 			if (hit != nullptr)
 				hit->break_spring();
@@ -1171,8 +1200,7 @@ public:
 			}
 			else if (spr == number{18})
 			{
-				auto result1 = collide(ObjType::Player, number{0}, number{0});
-				auto hit = static_pointer_cast<player>(result1);
+				auto hit = static_pointer_cast<player>(collide(ObjType::Player, number{0}, number{0}));
 				if (hit != nullptr && hit->spd.y >= number{0})
 				{
 					spr = number{19};
@@ -1181,7 +1209,7 @@ public:
 					hit->spd.y = number{-3};
 					hit->djump = max_djump;
 					delay = number{10};
-					init_object<smoke>(x, y);
+					objectstocreate.push_back(make_tuple(ObjType::Smoke, x, y));
 
 					// breakable below us
 					auto below = static_pointer_cast<fall_floor_spring>(collide(ObjType::Fall_Floor, number{0}, number{1}));
@@ -1234,7 +1262,7 @@ public:
 					psfx(number{7});
 					state = number{0};
 					collideable = true;
-					init_object<smoke>(x, y);
+					objectstocreate.push_back(make_tuple(ObjType::Smoke, x, y));
 				}
 			}
 		}
@@ -1293,7 +1321,7 @@ public:
 			if (hit != nullptr && hit->djump < max_djump)
 			{
 				psfx(number{6});
-				init_object<smoke>(x, y);
+				objectstocreate.push_back(make_tuple(ObjType::Smoke, x, y));
 				hit->djump = max_djump;
 				spr = number{0};
 				timer = number{60};
@@ -1304,7 +1332,7 @@ public:
 		else
 		{
 			psfx(number{7});
-			init_object<smoke>(x, y);
+			objectstocreate.push_back(make_tuple(ObjType::Smoke, x, y));
 			spr = number{22};
 		}
 	}
@@ -1345,8 +1373,8 @@ public:
 			hit->djump = max_djump;
 			sfx_timer = number{20};
 			pico8::sfx(13);
-			got_fruit.insert(1 + level_index().floor());
-			init_object<lifeup>(x, y);
+			got_fruit.at(level_index().floor()) = true;
+			objectstocreate.push_back(make_tuple(ObjType::Lifeup, x, y));
 			markfordelete(this->id);
 			// Stats.Increment(Stat.PICO_BERRIES);
 		}
@@ -1406,8 +1434,8 @@ public:
 			hit->djump = max_djump;
 			sfx_timer = number{20};
 			pico8::sfx(13);
-			got_fruit.insert(1 + level_index().floor());
-			init_object<lifeup>(x, y);
+			got_fruit.at(1 + level_index().floor()) = true;
+			objectstocreate.push_back(make_tuple(ObjType::Lifeup, x, y));
 			markfordelete(this->id);
 			// Stats.Increment(Stat.PICO_BERRIES);
 		}
@@ -1450,11 +1478,11 @@ public:
 			sfx_timer = number{20};
 			pico8::sfx(16);
 			markfordelete(this->id);
-			init_object<smoke>(x, y);
-			init_object<smoke>(x + number{8}, y);
-			init_object<smoke>(x, y + number{8});
-			init_object<smoke>(x + number{8}, y + number{8});
-			init_object<fruit>(x + number{4}, y + number{4});
+			objectstocreate.push_back(make_tuple(ObjType::Smoke, x, y));
+			objectstocreate.push_back(make_tuple(ObjType::Smoke, x + number{8}, y));
+			objectstocreate.push_back(make_tuple(ObjType::Smoke, x, y + number{8}));
+			objectstocreate.push_back(make_tuple(ObjType::Smoke, x + number{8}, y + number{8}));
+			objectstocreate.push_back(make_tuple(ObjType::Smoke, x + number{4}, y + number{4}));
 		}
 		hitbox = Rectangle(number{0}, number{0}, number{16}, number{16});
 	}
@@ -1517,7 +1545,7 @@ public:
 			{
 				sfx_timer = number{20};
 				pico8::sfx(16);
-				init_object<fruit>(x, y - number{4});
+				objectstocreate.push_back(make_tuple(ObjType::Fruit, x, y - number{4}));
 				markfordelete(this->id);
 			}
 		}
@@ -1697,8 +1725,8 @@ public:
 				hit->spd.x = number{0};
 				hit->spd.y = number{0};
 				state = number{1};
-				init_object<smoke>(x, y);
-				init_object<smoke>(x + number{8}, y);
+				objectstocreate.push_back(make_tuple(ObjType::Smoke, x, y));
+				objectstocreate.push_back(make_tuple(ObjType::Smoke, x + number{8}, y));
 				timer = number{60};
 				particles.clear();
 			}
@@ -1724,7 +1752,7 @@ public:
 				particles.clear();
 				flash_bg = false;
 				new_bg = true;
-				init_object<orb>(x + number{4}, y + number{4});
+				objectstocreate.push_back(make_tuple(ObjType::Orb, x + number{4}, y + number{4}));
 				pause_player = false;
 			}
 			for (auto &p : particles)
@@ -1752,7 +1780,13 @@ public:
 	void init()
 	{
 		x += number{5};
-		score = got_fruit.size();
+		for (auto fruit : got_fruit)
+		{
+			if (fruit == true)
+			{
+				score = score + 1;
+			}
+		}
 
 		// Stats.Increment(Stat.PICO_COMPLETES);
 		// Achievements.Register(Achievement.PICO8);
@@ -1839,22 +1873,8 @@ void next_room()
 
 void load_room(int x, int y)
 {
-	if (shake > number{0})
-	{
-		shake -= number{1};
-		pico8::camera();
-		if (shake > number{0})
-			pico8::camera(number{-2} + rnd(number{5}), number{-2} + rnd(number{5}));
-	}
-	else
-	{
-		internal_load_room(x, y);
-	}
-}
-
-void internal_load_room(int x, int y)
-{
-	// shake=number{0};// stop screenshake
+	will_restart = false;
+	shake = number{0}; // stop screenshake
 	// remove existing objects
 	destroy_objects(true);
 	// destroy_particles(true);
@@ -1870,39 +1890,56 @@ void internal_load_room(int x, int y)
 	{
 		for (auto ty = 0; ty <= 15; ty += 1)
 		{
-			auto tile = pico8::mget(room.x * number{16} + tx, room.y * number{16} + ty);
-			if (tile == number{11})
-				init_object<platform>(tx * number{8}, ty * number{8}).dir = number{-1};
-			else if (tile == number{12})
-				init_object<platform>(tx * number{8}, ty * number{8}).dir = number{1};
-			else
+			auto tile = pico8::mget(room.x * number{16} + tx, room.y * number{16} + ty).floor();
+			switch (tile)
 			{
-				if (tile == number{1})
-					init_object<player_spawn>(tx * number{8}, ty * number{8}, tile);
-				else if (tile == number{18})
-					init_object<fall_floor_spring>(tx * number{8}, ty * number{8}, tile, true); // spring (spring_fall_floor combo)
-				else if (tile == number{22})
-					init_object<balloon>(tx * number{8}, ty * number{8}, tile);
-				else if (tile == number{23})
-					init_object<fall_floor_spring>(tx * number{8}, ty * number{8}, tile, false); // fall_floor (spring_fall_floor combo)
-				else if (tile == number{86})
-					init_object<message>(tx * number{8}, ty * number{8}, tile);
-				else if (tile == number{96})
-					init_object<big_chest>(tx * number{8}, ty * number{8}, tile);
-				else if (tile == number{118})
-					init_object<flag>(tx * number{8}, ty * number{8}, tile);
-				else if (true || got_fruit.find((number{1} + level_index()).floor()) != got_fruit.end()) // todo check if this find really works
+			case 11:
+				init_object<platform>(tx * number{8}, ty * number{8}, nullopt, nullopt, number{-1});
+				break;
+			case 12:
+				init_object<platform>(tx * number{8}, ty * number{8}, nullopt, nullopt, number{1});
+				break;
+			case 1:
+				init_object<player_spawn>(tx * number{8}, ty * number{8}, tile);
+				break;
+			case 18:
+				init_object<fall_floor_spring>(tx * number{8}, ty * number{8}, tile, true); // spring (spring_fall_floor combo)
+				break;
+			case 22:
+				init_object<balloon>(tx * number{8}, ty * number{8}, tile);
+				break;
+			case 23:
+				init_object<fall_floor_spring>(tx * number{8}, ty * number{8}, tile, false); // fall_floor (spring_fall_floor combo)
+				break;
+			case 86:
+				init_object<message>(tx * number{8}, ty * number{8}, tile);
+				break;
+			case 96:
+				init_object<big_chest>(tx * number{8}, ty * number{8}, tile);
+				break;
+			case 118:
+				init_object<flag>(tx * number{8}, ty * number{8}, tile);
+				break;
+			}
+			if (got_fruit.at(level_index().floor()) == false)
+			{
+				switch (tile)
 				{
-					if (tile == number{26})
-						init_object<fruit>(tx * number{8}, ty * number{8}, tile);
-					else if (tile == number{28})
-						init_object<fly_fruit>(tx * number{8}, ty * number{8}, tile);
-					else if (tile == number{64})
-						init_object<fake_wall>(tx * number{8}, ty * number{8}, tile);
-					else if (tile == number{8})
-						init_object<key>(tx * number{8}, ty * number{8}, tile);
-					else if (tile == number{20})
-						init_object<chest>(tx * number{8}, ty * number{8}, tile);
+				case 26:
+					init_object<fruit>(tx * number{8}, ty * number{8}, tile);
+					break;
+				case 28:
+					init_object<fly_fruit>(tx * number{8}, ty * number{8}, tile);
+					break;
+				case 64:
+					init_object<fake_wall>(tx * number{8}, ty * number{8}, tile);
+					break;
+				case 8:
+					init_object<key>(tx * number{8}, ty * number{8}, tile);
+					break;
+				case 20:
+					init_object<chest>(tx * number{8}, ty * number{8}, tile);
+					break;
 				}
 			}
 		}
@@ -2077,7 +2114,7 @@ void ClassicDraw()
 	// draw bg terrain
 	pico8::map(room.x * number{16}, room.y * number{16}, number{0}, number{0}, number{16}, number{16}, number{2});
 
-	destroy_objects();
+	// destroy_objects();
 	// platforms / big chest
 	for (auto &obj : objects)
 	{
@@ -2090,7 +2127,7 @@ void ClassicDraw()
 	pico8::map(room.x * number{16}, room.y * number{16}, off, number{0}, number{16}, number{16}, number{1});
 
 	// draw objects
-	destroy_objects();
+	// destroy_objects();
 	for (auto &obj : objects)
 	{
 		if (obj.second->type != ObjType::Platform && obj.second->type != ObjType::Big_Chest)
@@ -2153,7 +2190,7 @@ void ClassicDraw()
 
 	if (level_index() == number{30})
 	{
-		destroy_objects();
+		// destroy_objects();
 		for (auto &obj : objects)
 		{
 			if (obj.second->type == ObjType::Player)

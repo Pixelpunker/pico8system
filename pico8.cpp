@@ -214,7 +214,6 @@ namespace pico8
   static uint_fast8_t dontmap = 3; // seems like color 3 is never remapped (Alpha 48)
   static uint_fast8_t berries = 1;
   static bool sound = true;
-  static bool soundenginelaunched = false;
   static bool swapped_buttons = false;
 
   auto mountain = buffer(95, 48, mountaindata);
@@ -932,13 +931,6 @@ namespace pico8
   // int sfxqueue;
   static void sfx(uint32_t n, uint32_t channel = 0, uint32_t offset = 0, uint32_t length = 255)
   {
-    if (!soundenginelaunched)
-    {
-      multicore_reset_core1();
-      multicore_launch_core1(launchsfx);
-      soundenginelaunched = true;
-    }
-
     if (sound == true)
     {
       multicore_fifo_push_blocking(n);
@@ -1011,6 +1003,8 @@ namespace pico8
   void init(bool swapped_buttons = false)
   {
     restoreSettingsFromFlash();
+    multicore_reset_core1();
+    multicore_launch_core1(launchsfx);
     font(-1, -1, -1, _minimal_font);
     swapped_buttons = swapped_buttons;
     // set drawing region to 128x128 (visible only 120x120 controlled by system_offset and hud_offset)
