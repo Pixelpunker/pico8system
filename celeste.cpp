@@ -159,7 +159,7 @@ void title_screen();
 void draw_hair(player_hair &hair, Vect pos, number facing, number djump);
 void psfx(number num);
 void draw_time(number x, number y);
-void destroy_objects(bool all = 0);
+void refresh_objects(bool all = 0);
 number tile_at(number x, number y);
 bool ice_at(number x, number y, number w, number h);
 bool solid_at(number x, number y, number w, number h);
@@ -618,7 +618,7 @@ void markparticlesfordelete(int id)
 	markedparticlesfordelete.push_back(id);
 }
 
-void destroy_objects(bool all)
+void refresh_objects(bool all)
 {
 	if (all == true)
 	{
@@ -1085,6 +1085,7 @@ public:
 	}
 	void init() override
 	{
+		dead_particles.clear();
 		this->spr = number{3};
 		this->target = Vect(this->x, this->y);
 		this->y = number{128};
@@ -1882,7 +1883,7 @@ void load_room(int x, int y)
 {
 	will_restart = false;
 	// remove existing objects
-	destroy_objects(true);
+	refresh_objects(true);
 	if (objects.size() != 0)
 	{
 		return;
@@ -2030,7 +2031,7 @@ void ClassicUpdate()
 	}
 
 	// clear deleted objects
-	destroy_objects();
+	refresh_objects();
 	// update each object
 	for (auto &obj : objects)
 	{
@@ -2038,7 +2039,7 @@ void ClassicUpdate()
 		obj.second->update();
 	}
 	// clear additional deleted objects
-	destroy_objects();
+	refresh_objects();
 
 	// start game
 	if (is_title())
