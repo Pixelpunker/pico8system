@@ -219,8 +219,8 @@ namespace pico8
   auto mountain = buffer(95, 48, mountaindata);
   auto celeste = buffer(128, 64, spritedata);
 
-  const int picowidth = 136; // workaround for
-                             // screen shake issue, should be 128
+  const int picowidth = 128; // workaround for
+                             // screen shake issue, should be 128, was 136
   color_t _fdp[picowidth * picowidth] __attribute__((aligned(4))) = {};
   static buffer_t *PICO8SCREEN = buffer(picowidth, picowidth, _fdp);
 

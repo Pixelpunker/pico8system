@@ -24,7 +24,7 @@ project(${PROJECT_NAME} C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(PICO_CXX_ENABLE_EXCEPTIONS 1) # we can disable exceptions in release, only for debugging
-set(PICO_CXX_ENABLE_RTTI 1) # we need runtime type information
+set(PICO_CXX_ENABLE_RTTI 0) # runtime type information disabled for performance reasons
 
 
 # Initialize the SDK

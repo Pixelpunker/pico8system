@@ -19,9 +19,8 @@ using namespace std;
 using namespace picosystem;
 using namespace picomath;
 
-bool error = false;
-string errormessage;
 string message2; // debug
+bool hasexception = false;
 
 // *************************
 // * PICO8SYSTEM ADDITIONS *
@@ -65,6 +64,9 @@ number playerx = number{0};
 
 int viewportx = 0;
 int viewporty = 0;
+
+number screenshakex = number{0};
+number screenshakey = number{0};
 
 enum direction
 {
@@ -255,7 +257,10 @@ number delay_restart = number{0};
 array<bool, 32> got_fruit;
 void reset_fruit()
 {
-	got_fruit = {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false};
+	got_fruit = {false, false, false, false, false, false, false, false,
+							 false, false, false, false, false, false, false, false,
+							 false, false, false, false, false, false, false, false,
+							 false, false, false, false, false, false, false, false};
 }
 bool has_dashed = false;
 number sfx_timer = number{0};
@@ -791,12 +796,14 @@ public:
 		if (spikes_at(x + hitbox.x, y + hitbox.y, hitbox.Width, hitbox.Height, spd.x, spd.y))
 		{
 			kill_player();
+			return;
 		}
 
 		// bottom death
 		if (y > number{128})
 		{
 			kill_player();
+			return;
 		}
 
 		auto on_ground = is_solid(number{0}, number{1});
@@ -1434,7 +1441,7 @@ public:
 			hit->djump = max_djump;
 			sfx_timer = number{20};
 			pico8::sfx(13);
-			got_fruit.at(1 + level_index().floor()) = true;
+			got_fruit.at(level_index().floor()) = true;
 			objectstocreate.push_back(make_tuple(ObjType::Lifeup, x, y));
 			markfordelete(this->id);
 			// Stats.Increment(Stat.PICO_BERRIES);
@@ -1874,9 +1881,12 @@ void next_room()
 void load_room(int x, int y)
 {
 	will_restart = false;
-	shake = number{0}; // stop screenshake
 	// remove existing objects
 	destroy_objects(true);
+	if (objects.size() != 0)
+	{
+		return;
+	}
 	// destroy_particles(true);
 	has_dashed = false;
 	has_key = false;
@@ -1957,6 +1967,10 @@ void load_room(int x, int y)
 
 void ClassicUpdate()
 {
+	if (hasexception == true)
+	{
+		return;
+	}
 	if (pressed(X))
 	{ // debug
 		next_room();
@@ -1990,9 +2004,18 @@ void ClassicUpdate()
 	if (shake > number{0})
 	{
 		shake -= number{1};
-		pico8::camera();
+		// pico8::camera();
 		if (shake > number{0})
-			pico8::camera(number{-2} + rnd(number{5}), number{-2} + rnd(number{5}));
+		{
+			screenshakex = -(number{-2} + rnd(number{5}));
+			screenshakey = -(number{-2} + rnd(number{5}));
+		}
+		else
+		{
+			screenshakex = number{0};
+			screenshakey = number{0};
+		}
+		// pico8::camera(number{-2} + rnd(number{5}), number{-2} + rnd(number{5}));
 	}
 
 	// restart(soon)
@@ -2058,6 +2081,10 @@ void draw_time(number x, number y)
 
 void ClassicDraw()
 {
+	if (hasexception == true)
+	{
+		return;
+	}
 	// reset all palette values
 	pico8::pal();
 
@@ -2170,10 +2197,10 @@ void ClassicDraw()
 	}
 
 	// draw outside of the screen for screenshake
-	pico8::rectfill(number{-5}, number{-5}, number{-1}, number{133}, number{0});
-	pico8::rectfill(number{-5}, number{-5}, number{133}, number{-1}, number{0});
-	pico8::rectfill(number{-5}, number{128}, number{133}, number{133}, number{0});
-	pico8::rectfill(number{128}, number{-5}, number{133}, number{133}, number{0});
+	/* 	pico8::rectfill(number{-5}, number{-5}, number{-1}, number{133}, number{0});
+		pico8::rectfill(number{-5}, number{-5}, number{133}, number{-1}, number{0});
+		pico8::rectfill(number{-5}, number{128}, number{133}, number{133}, number{0});
+		pico8::rectfill(number{128}, number{-5}, number{133}, number{133}, number{0}); */
 
 	// C# Change: "press button" instead to fit consoles
 	// no need for credits here
@@ -2612,91 +2639,102 @@ void init()
 
 void update(uint32_t tick)
 {
-	try
+	if (hasexception == true)
+	{
+		return;
+	}
+	// try
+	// {
+	if (currentgamestate == game)
+	{
+		try
+		{
+			ClassicUpdate();
+		}
+		catch (...)
+		{
+			hasexception = true;
+			std::exception_ptr p = std::current_exception();
+			target();
+			pen(0, 0, 0, 15);
+			picosystem::frect(0, 39, 128, 21);
+			pen(0, 15, 0, 15);
+			text((p ? p.__cxa_exception_type()->name() : "null"), 0, 40);
+			text("update", 0, 50);
+			_flip();
+			return;
+		}
+		auto direction = movetarget.findDirection(playerx);
+		if (direction == direction::left)
+		{
+			movetarget.target1 = 0;
+		}
+		auto target = movetarget.findTarget(playerx);
+		cam.x = target;
+		cam.update();
+	}
+	else
+	{
+		menu_update();
+	}
+
+	if (pressed(Y) && !is_title())
 	{
 		if (currentgamestate == game)
 		{
-
-			ClassicUpdate();
-			auto direction = movetarget.findDirection(playerx);
-			if (direction == direction::left)
-			{
-				movetarget.target1 = 0;
-			}
-			auto target = movetarget.findTarget(playerx);
-			cam.x = target;
-			cam.update();
+			switch_to_menu();
 		}
 		else
 		{
-			menu_update();
-		}
-
-		if (pressed(Y) && !is_title())
-		{
-			if (currentgamestate == game)
-			{
-				switch_to_menu();
-			}
-			else
-			{
-				return_to_game();
-			}
+			return_to_game();
 		}
 	}
-	catch (const std::exception &e)
-	{
-		errormessage = e.what();
-		error = true;
-		pen(0, 15, 0, 15);
-		target();
-		text(errormessage, 5, 40);
-	}
+	// }
+	// catch (const std::exception &e)
+	// {
+	// 	errormessage = e.what();
+	// 	error = true;
+	// 	target();
+	// 	pen(0, 15, 0, 15);
+	// 	text(errormessage, 0, 40);
+	// 	text("update", 0, 50);
+	// 	_flip();
+	// }
 }
 
 void draw(uint32_t tick)
 {
-	if (error)
+	if (hasexception == true)
 	{
-		pen(0, 15, 0, 15);
-		target();
-		text(errormessage, 5, 40);
-		return; // stop drawing.
+		return;
 	}
+	if (currentgamestate == game)
+	{
+		blend(pico8::PALETTE);
+		target(pico8::PICO8SCREEN);
+		ClassicDraw();
+		target();
+		blend(pico8::CONVERT);
+		viewportx = secondaryCamera();
+		viewporty = leveloffsets[level_index().floor()][1];
 
-	try
-	{
-		if (currentgamestate == game)
-		{
-			blend(pico8::PALETTE);
-			target(pico8::PICO8SCREEN);
-			ClassicDraw();
-			target();
-			blend(pico8::CONVERT);
-			viewportx = secondaryCamera();
-			viewporty = leveloffsets[level_index().floor()][1];
-			blit(pico8::PICO8SCREEN, viewportx, viewporty, 120, 120, 0, 0);
-			blend(picosystem::COPY);
-			target();
-			pen(0, 0, 0, 15);
-			text("obj:" + to_string(objects.size()), -1, 0);
-			text("obj:" + to_string(objects.size()), 1, 0);
-			pen(15, 15, 15, 15);
-			text("obj:" + to_string(objects.size()), 0, 0);
-			text(message2, 0, 10);
-		}
-		else
-		{
-			menu_draw(tick);
-		}
-	}
-	catch (const std::exception &e)
-	{
-		pen(0, 15, 0, 15);
+		// blit(pico8::PICO8SCREEN, 4, 4, 120, 120, -10, -10, 120, 120);
+		// blit(pico8::PICO8SCREEN, 4, 4, 120, 120, 10, 10, 110, 110);
+		auto widthx = screenshakex.round() > 0 ? 120 - screenshakex.round() : 120;
+		auto widthy = screenshakey.round() > 0 ? 120 - screenshakey.round() : 120;
+		blit(pico8::PICO8SCREEN, viewportx, viewporty, 120 - screenshakex.round(), 120 - screenshakey.round(), screenshakex.round(), screenshakey.round(), widthx, widthy);
+		blend(picosystem::COPY);
 		target();
-		text(e.what(), 5, 40);
-		error = true;
-		return; // stop drawing.
+		pen(0, 0, 0, 15);
+		text("obj:" + to_string(objects.size()), -1, 0);
+		text("obj:" + to_string(objects.size()), 1, 0);
+		pen(15, 15, 15, 15);
+		text("obj:" + to_string(objects.size()), 0, 0);
+		text(message2, 0, 10);
+	}
+	else
+	{
+		menu_draw(tick);
 	}
 
 	// Start Debug stats
