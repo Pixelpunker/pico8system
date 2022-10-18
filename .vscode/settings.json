@@ -49,7 +49,12 @@
 		"list": "cpp",
 		"unordered_set": "cpp",
 		"compare": "cpp",
-		"xtr1common": "cpp"
+		"xtr1common": "cpp",
+		"bit": "cpp",
+		"concepts": "cpp",
+		"cstring": "cpp",
+		"ctime": "cpp",
+		"xstddef": "cpp"
 	},
 	"python.pythonPath": "/usr/bin/python3"
 }

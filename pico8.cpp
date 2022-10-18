@@ -370,6 +370,7 @@ namespace pico8
     target();
     clear();
     target(pico8::PICO8SCREEN);
+    clip(0, 0, 128, 128);
     // pen(0,0,255);
     clear();
     pen(lastpencolor);
@@ -1007,10 +1008,10 @@ namespace pico8
     multicore_launch_core1(launchsfx);
     font(-1, -1, -1, _minimal_font);
     swapped_buttons = swapped_buttons;
-    // set drawing region to 128x128 (visible only 120x120 controlled by system_offset and hud_offset)
-    clip(0, 0, 128, 128);
 
     target(PICO8SCREEN);
+    // set drawing region to 128x128 (visible only 120x120 controlled by system_offset and hud_offset)
+    clip(0, 0, 128, 128);
 
     blend(PALETTE);
     spritesheet(celeste);

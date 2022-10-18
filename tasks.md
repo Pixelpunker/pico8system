@@ -2,6 +2,12 @@
 
 ## Bug fixes
 
+* Auf Trampolin springen: erzeugt beliebige Objekte
+* Wolken zu schnell
+* Haare kaputt
+* Player sinkt 1 Pixel ein
+* Sound lässt sich nicht immer im Menü anschalten
+
 * ~~Screen shake issues -- noch mehr Space?~~
 * ~~Replizierbarer Crash bei mehrmals hintereinander fallen, Level 3~~
 * ~~Too few particles~~

@@ -74,6 +74,7 @@ void update(uint32_t tick)
 void draw(uint32_t tick)
 {
 	target(pico8::PICO8SCREEN);
+	clip(0, 0, 128, 128);
 
 	pico8::cls(12);
 	picosystem::camera(offsetx, offsety);
