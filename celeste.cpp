@@ -65,6 +65,8 @@ number playerx = number{0};
 int viewportx = 0;
 int viewporty = 0;
 
+int objectcount = 0;
+
 number screenshakex = number{0};
 number screenshakey = number{0};
 
@@ -783,76 +785,59 @@ void draw_hair(player_hair &hair, Vect pos, number facing, number djump)
 	}
 }
 
-class player_spawn : public ClassicObject
-{
-private:
-	Vect target;
-	number state;
-	number delay;
+class playerbase : public ClassicObject {
+	public:
+		playerbase() {
 
-public:
-	bool p_jump;
-	bool p_dash;
-	number grace;
-	number jbuffer;
-	number djump;
-	number dash_time;
-	number dash_effect_time;
-	Vect dash_target;
-	Vect dash_accel;
-	number spr_off;
-	bool was_on_ground;
-	player_spawn()
+		}
+		~playerbase() {
+		}
+	void draw_hair(Vect pos, number facing, number djump)
 	{
-		type = ObjType::Player_Spawn;
+		auto c = (djump == number{1} ? number{8} : (djump == number{2} ? (number{7} + floor(mod((frames / number{3}), number{2})) * number{4}) : number{12}));
+		auto last = Vect(pos.x + number{4} - facing * number{2}, pos.y + (pico8::btn(k_down) ? number{4} : number{3}));
+		for (auto &h : hair)
+		{
+			h.pos.x += (last.x - h.pos.x) / number{1.5};
+			h.pos.y += (last.y + number{0.5} - h.pos.y) / number{1.5};
+			pico8::circfill(h.pos.x, h.pos.y, h.size, c);
+			last = h.pos;
+		}
+	}
+	struct node
+	{
+		Vect pos;
+		number size;
 	};
-	~player_spawn()
+	array<node, 5> hair;
+
+	void init_hair() {
+		for (auto i = 0; i <= 4; i++) {
+			hair[i] = node{.pos = Vect{ .x = this->x, .y = this->y }, .size = picomath::max(1, picomath::min(2, 3 - i))};
+		}
+	}
+};
+
+class player : public playerbase
+{
+public:
+	bool p_jump = false;
+	bool p_dash = false;
+	number grace = number{0};
+	number jbuffer = number{0};
+	number djump = number{0};
+	number dash_time = number{0};
+	number dash_effect_time = number{0};
+	Vect dash_target = Vect(number{0}, number{0});
+	Vect dash_accel = Vect(number{0}, number{0});
+	number spr_off = number{0};
+	bool was_on_ground = false;
+	player()
 	{
-		hair.reset();
+		type = ObjType::Player;
 	}
 	void init() override
 	{
-		dead_particles.clear();
-		this->spr = number{3};
-		this->target = Vect(this->x, this->y);
-		this->y = number{128};
-		this->spd.y = number{-4};
-		this->state = number{0};
-		this->delay = number{0};
-		this->solids = false;
-		// hair = make_shared<player_hair>(Vect(this->x, this->y)); // now referring to global hair, not a member of player_spawn anymore. //debug
-		pico8::sfx(4);
-	}
-	void playerinit()
-	{
-		this->state = 2;
-		this->spd.y = 0;
-		this->spd.x = 0;
-
-		collideable = true;
-		solids = true;
-		flipX= false;
-		flipY = false;
-		
-		spd.x = 0;
-		spd.y = 0;
-		rem.x = 0;
-		rem.y = 0;
-
-
-		type = ObjType::Player;
-		p_jump = false;
-		p_dash = false;
-		grace = number{0};
-		jbuffer = number{0};
-		djump = number{0};
-		dash_time = number{0};
-		dash_effect_time = number{0};
-		dash_target = Vect(number{0}, number{0});
-		dash_accel = Vect(number{0}, number{0});
-		spr_off = number{0};
-		was_on_ground = false;
-
 		spr = number{1};
 		djump = max_djump;
 		hitbox = Rectangle(number{1}, number{3}, number{6}, number{5});
@@ -864,8 +849,9 @@ public:
 		pico8::sfx(0);
 		deaths += number{1};
 		shake = number{10};
-		// Stats.Increment(Stat.PICO_DEATHS);
 		this->setInactive();
+		// Stats.Increment(Stat.PICO_DEATHS);
+
 		dead_particles.clear();
 		for (auto dir = 0; dir <= 7; dir += 1)
 		{
@@ -877,308 +863,337 @@ public:
 					Vect(picomath::cos(angle) * number{3}, picomath::sin(angle + number{0.5}) * number{3}));
 			dead_particles.emplace(dead_particle->id, dead_particle);
 		}
-		// restart_room(); // debug
-		// next_room(); // debug
-		load_room(room.x, room.y);
-		shake = 0;
+		restart_room();
 	}
 
 	void update() override
 	{
-		if (this->isActive == false)
+		if (pause_player)
 			return;
-		if (this->type == ObjType::Player_Spawn)
+		auto input = pico8::btn(k_right) ? number{1} : (pico8::btn(k_left) ? number{-1} : number{0});
+
+		// spikes collide
+		if (spikes_at(x + hitbox.x, y + hitbox.y, hitbox.Width, hitbox.Height, spd.x, spd.y))
 		{
-			// jumping up
-			if (state == number{0})
+			kill_player();
+		}
+
+		// bottom death
+		if (y > number{128})
+		{
+			kill_player();
+		}
+
+		auto on_ground = is_solid(number{0}, number{1});
+		auto on_ice = is_ice(number{0}, number{1});
+
+		// smoke particles
+		if (on_ground && !was_on_ground)
+			init_object<smoke>(x, y + number{4});
+
+		auto jump = pico8::btnp(k_jump) && !p_jump; // change addition, was btn(k_jump)
+		p_jump = pico8::btn(k_jump);
+		if (jump)
+		{
+			jbuffer = number{4};
+		}
+		else if (jbuffer > number{0})
+		{
+			jbuffer -= number{1};
+		}
+
+		auto dash = pico8::btnp(k_dash) && !p_dash; // change addition, was btn(k_dash)
+		p_dash = pico8::btn(k_dash);
+
+		if (on_ground)
+		{
+			grace = number{6};
+			if (djump < max_djump)
 			{
-				if (y < target.y + number{16})
-				{
-					state = number{1};
-					delay = number{3};
-				}
-			}
-			// falling
-			else if (state == number{1})
-			{
-				spd.y += number{0.5};
-				if (spd.y > number{0} && delay > number{0})
-				{
-					spd.y = number{0};
-					delay -= number{1};
-				}
-				if (spd.y > number{0} && y > target.y)
-				{
-					y = target.y;
-					spd = Vect(number{0}, number{0});
-					state = number{2};
-					delay = number{5};
-					shake = number{5};
-					init_object<smoke>(x, y + number{4});
-					pico8::sfx(5);
-				}
-			}
-			// landing
-			else if (state == number{2})
-			{
-				delay -= number{1};
-				spr = number{6};
-				if (delay < number{0})
-				{
-					this->playerinit(); // todo: alle gemeinsamen felder auf initialwert setzen
-				}
+				psfx(number{54});
+				djump = max_djump;
 			}
 		}
-		if (this->type == ObjType::Player)
+		else if (grace > number{0})
+			grace -= number{1};
+
+		dash_effect_time -= number{1};
+		if (dash_time > number{0} && has_dashed)
 		{
-			if (this->isActive == false)
-				return;
-			if (pause_player)
-				return;
-			auto input = pico8::btn(k_right) ? number{1} : (pico8::btn(k_left) ? number{-1} : number{0});
+			init_object<smoke>(x, y);
+			dash_time -= number{1};
+			spd.x = appr(spd.x, dash_target.x, dash_accel.x);
+			spd.y = appr(spd.y, dash_target.y, dash_accel.y);
+		}
+		else
+		{
+			// move
+			auto maxrun = number{1};
+			auto accel = number{0.6};
+			auto deccel = number{0.15};
 
-			// spikes collide
-			if (spikes_at(x + hitbox.x, y + hitbox.y, hitbox.Width, hitbox.Height, spd.x, spd.y))
+			if (!on_ground)
+				accel = number{0.4};
+			else if (on_ice)
 			{
-				kill_player();
+				accel = number{0.05};
+				if (input == (flipX ? number{-1} : number{1})) // this it how it was in the pico-8 cart but is redundant?
+					accel = number{0.05};
 			}
 
-			// bottom death
-			if (y > number{128})
+			if (picomath::abs(spd.x) > maxrun)
+				spd.x = appr(spd.x, sign(spd.x) * maxrun, deccel);
+			else
+				spd.x = appr(spd.x, input * maxrun, accel);
+
+			// facing
+			if (spd.x != number{0})
+				flipX = (spd.x < number{0});
+
+			// gravity
+			auto maxfall = number{2.0};
+			auto gravity = number{0.21};
+
+			if (picomath::abs(spd.y) <= number{0.15})
+				gravity *= number{0.5};
+
+			// wall slide
+			if (input != number{0} && is_solid(input, number{0}) && !is_ice(input, number{0}))
 			{
-				kill_player();
+				maxfall = number{0.4};
+				if (rnd(number{10}) < number{2})
+					init_object<smoke>(x + input * number{6}, y);
 			}
 
-			auto on_ground = is_solid(number{0}, number{1});
-			auto on_ice = is_ice(number{0}, number{1});
+			if (!on_ground)
+				spd.y = appr(spd.y, maxfall, gravity);
 
-			// smoke particles
-			if (on_ground && !was_on_ground) {
-				init_object<smoke>(x, y + number{4});
-			}
-
-			auto jump = pico8::btnp(k_jump) && !p_jump; // change addition, was btn(k_jump)
-			p_jump = pico8::btn(k_jump);
-			if (jump)
+			// jump
+			if (jbuffer > number{0})
 			{
-				jbuffer = number{4};
-			}
-			else if (jbuffer > number{0})
-			{
-				jbuffer -= number{1};
-			}
-
-			auto dash = pico8::btnp(k_dash) && !p_dash; // change addition, was btn(k_dash)
-			p_dash = pico8::btn(k_dash);
-
-			if (on_ground)
-			{
-				grace = number{6};
-				if (djump < max_djump)
+				if (grace > number{0})
 				{
-					psfx(number{54});
-					djump = max_djump;
+					// normal jump
+					psfx(number{1});
+					jbuffer = number{0};
+					grace = number{0};
+					spd.y = number{-2};
+					init_object<smoke>(x, y + number{4});
+				}
+				else
+				{
+					// wall jump
+					auto wall_dir = (is_solid(number{-3}, number{0}) ? number{-1} : (is_solid(number{3}, number{0}) ? number{1} : number{0}));
+					if (wall_dir != number{0})
+					{
+						psfx(number{2});
+						jbuffer = number{0};
+						spd.y = number{-2};
+						spd.x = -wall_dir * (maxrun + number{1});
+						if (is_ice(wall_dir * number{3}, number{0}))
+							init_object<smoke>(x + wall_dir * number{6}, y);
+					}
 				}
 			}
-			else if (grace > number{0})
-				grace -= number{1};
 
-			dash_effect_time -= number{1};
-			if (dash_time > number{0} && has_dashed)
+			// dash
+			auto d_full = number{5};
+			auto d_half = d_full * number{0.70710678118};
+
+			if (djump > number{0} && dash)
 			{
 				init_object<smoke>(x, y);
-				dash_time -= number{1};
-				spd.x = appr(spd.x, dash_target.x, dash_accel.x);
-				spd.y = appr(spd.y, dash_target.y, dash_accel.y);
-			}
-			else
-			{
-				// move
-				auto maxrun = number{1};
-				auto accel = number{0.6};
-				auto deccel = number{0.15};
+				djump -= number{1};
+				dash_time = number{4};
+				has_dashed = true;
+				dash_effect_time = number{10};
 
-				if (!on_ground)
-					accel = number{0.4};
-				else if (on_ice)
+				auto dash_x_input = (pico8::btn(k_left) ? number{-1} : (pico8::btn(k_right) ? number{1} : number{0})); // todo check again
+				auto dash_y_input = (pico8::btn(k_up) ? number{-1} : (pico8::btn(k_down) ? number{1} : number{0}));		 // todo check again
+
+				if (dash_x_input != number{0} && dash_y_input != number{0})
 				{
-					accel = number{0.05};
-					if (input == (flipX ? number{-1} : number{1})) // this it how it was in the pico-8 cart but is redundant?
-						accel = number{0.05};
+					spd.x = dash_x_input * d_half;
+					spd.y = dash_y_input * d_half;
+				}
+				else if (dash_x_input != number{0})
+				{
+					spd.x = dash_x_input * d_full;
+					spd.y = number{0};
+				}
+				else
+				{
+					spd.x = number{0};
+					spd.y = dash_y_input * d_full;
 				}
 
-				if (picomath::abs(spd.x) > maxrun)
-					spd.x = appr(spd.x, sign(spd.x) * maxrun, deccel);
-				else
-					spd.x = appr(spd.x, input * maxrun, accel);
+				psfx(number{3});
+				freeze = number{2};
+				shake = number{6};
+				dash_target.x = number{2} * sign(spd.x);
+				dash_target.y = number{2} * sign(spd.y);
+				dash_accel.x = number{1.5};
+				dash_accel.y = number{1.5};
 
-				// facing
+				if (spd.y < number{0})
+					dash_target.y *= number{0.75};
+				if (spd.y != number{0})
+					dash_accel.x *= number{0.70710678118};
 				if (spd.x != number{0})
-					flipX = (spd.x < number{0});
-
-				// gravity
-				auto maxfall = number{2.0};
-				auto gravity = number{0.21};
-
-				if (picomath::abs(spd.y) <= number{0.15})
-					gravity *= number{0.5};
-
-				// wall slide
-				if (input != number{0} && is_solid(input, number{0}) && !is_ice(input, number{0}))
-				{
-					maxfall = number{0.4};
-					if (rnd(number{10}) < number{2}) {
-						init_object<smoke>(x + input * number{6}, y);
-						}
-				}
-
-				if (!on_ground)
-					spd.y = appr(spd.y, maxfall, gravity);
-
-				// jump
-				if (jbuffer > number{0})
-				{
-					if (grace > number{0})
-					{
-						// normal jump
-						psfx(number{1});
-						jbuffer = number{0};
-						grace = number{0};
-						spd.y = number{-2};
-						init_object<smoke>(x, y + number{4});
-					}
-					else
-					{
-						// wall jump
-						auto wall_dir = (is_solid(number{-3}, number{0}) ? number{-1} : (is_solid(number{3}, number{0}) ? number{1} : number{0}));
-						if (wall_dir != number{0})
-						{
-							psfx(number{2});
-							jbuffer = number{0};
-							spd.y = number{-2};
-							spd.x = -wall_dir * (maxrun + number{1});
-							if (is_ice(wall_dir * number{3}, number{0})) {
-								init_object<smoke>(x + wall_dir * number{6}, y);
-							}
-						}
-					}
-				}
-
-				// dash
-				auto d_full = number{5};
-				auto d_half = d_full * number{0.70710678118};
-
-				if (djump > number{0} && dash)
-				{
-					init_object<smoke>(x, y);
-					djump -= number{1};
-					dash_time = number{4};
-					has_dashed = true;
-					dash_effect_time = number{10};
-
-					auto dash_x_input = (pico8::btn(k_left) ? number{-1} : (pico8::btn(k_right) ? number{1} : number{0})); // todo check again
-					auto dash_y_input = (pico8::btn(k_up) ? number{-1} : (pico8::btn(k_down) ? number{1} : number{0}));		 // todo check again
-
-					if (dash_x_input != number{0} && dash_y_input != number{0})
-					{
-						spd.x = dash_x_input * d_half;
-						spd.y = dash_y_input * d_half;
-					}
-					else if (dash_x_input != number{0})
-					{
-						spd.x = dash_x_input * d_full;
-						spd.y = number{0};
-					}
-					else
-					{
-						spd.x = number{0};
-						spd.y = dash_y_input * d_full;
-					}
-
-					psfx(number{3});
-					freeze = number{2};
-					shake = number{6};
-					dash_target.x = number{2} * sign(spd.x);
-					dash_target.y = number{2} * sign(spd.y);
-					dash_accel.x = number{1.5};
-					dash_accel.y = number{1.5};
-
-					if (spd.y < number{0})
-						dash_target.y *= number{0.75};
-					if (spd.y != number{0})
-						dash_accel.x *= number{0.70710678118};
-					if (spd.x != number{0})
-						dash_accel.y *= number{0.70710678118};
-				}
-				else if (dash && djump <= number{0})
-				{
-					psfx(number{9});
-					init_object<smoke>(x, y);
-				}
+					dash_accel.y *= number{0.70710678118};
 			}
-
-			// animation
-			spr_off += number{0.25};
-			if (!on_ground)
+			else if (dash && djump <= number{0})
 			{
-				if (is_solid(input, number{0}))
-					spr = number{5};
-				else
-					spr = number{3};
+				psfx(number{9});
+				init_object<smoke>(x, y);
 			}
-			else if (pico8::btn(k_down))
-				spr = number{6};
-			else if (pico8::btn(k_up))
-				spr = number{7};
-			else if (spd.x == number{0} || (!pico8::btn(k_left) && !pico8::btn(k_right)))
-				spr = number{1};
-			else
-				spr = number{1} + mod(spr_off, number{4});
-
-			// next level
-			if (y < number{-4} && level_index() < number{30})
-				next_room();
-
-			// was on the ground
-			was_on_ground = on_ground;
 		}
+
+		// animation
+		spr_off += number{0.25};
+		if (!on_ground)
+		{
+			if (is_solid(input, number{0}))
+				spr = number{5};
+			else
+				spr = number{3};
+		}
+		else if (pico8::btn(k_down))
+			spr = number{6};
+		else if (pico8::btn(k_up))
+			spr = number{7};
+		else if (spd.x == number{0} || (!pico8::btn(k_left) && !pico8::btn(k_right)))
+			spr = number{1};
+		else
+			spr = number{1} + mod(spr_off, number{4});
+
+		// next level
+		if (y < number{-4} && level_index() < number{30})
+			next_room();
+
+		// was on the ground
+		was_on_ground = on_ground;
 	}
 	void draw_player()
 	{
-		if (this->isActive == false)
-			return;
-
-		auto localjump = this->type == ObjType::Player_Spawn ? max_djump : this->djump;
-
 		auto spritePush = number{0};
-		if (localjump == number{2})
+		if (this->djump == number{2})
 		{
 			if (mod((frames / number{3}), number{2}).floor() == 0)
 				spritePush = number{10} * number{16};
 			else
 				spritePush = number{9} * number{16};
 		}
-		else if (localjump == number{0})
+		else if (this->djump == number{0})
 		{
 			spritePush = number{8} * number{16};
 		}
-		pico8::spr(this->spr + spritePush, this->x, this->y -1 /* debug debug */, number{1}, number{1}, this->flipX, this->flipY);
+		pico8::spr(this->spr + spritePush, this->x, this->y, number{1}, number{1}, this->flipX, this->flipY);
 	}
 	void draw() override
 	{
-		if (this->isActive == false)
-			return;
-		auto localjump = this->type == ObjType::Player_Spawn ? max_djump : this->djump;
-
 		// clamp in screen
-		if (this->type == ObjType::Player && (x < number{-1} || x > number{121}))
+		if (x < number{-1} || x > number{121})
 		{
 			x = clamp(x, number{-1}, number{121});
 			spd.x = number{0};
 		}
 		playerx = this->x; // save current player position for Celeste additions; ADDITION
 
-		draw_hair(*hair.get(), Vect(this->x, this->y), flipX ? number{-1} : number{1}, localjump);
+		draw_hair(Vect(this->x, this->y), flipX ? number{-1} : number{1}, djump);
+		draw_player();
+	}
+};
+
+class player_spawn : public playerbase
+{
+private:
+	Vect target;
+	number state;
+	number delay;
+
+public:
+	player_spawn()
+	{
+		type = ObjType::Player_Spawn;
+	};
+	~player_spawn()
+	{
+	}
+	void init() override
+	{
+		this->spr = number{3};
+		this->target = Vect(this->x, this->y);
+		this->y = number{128};
+		this->spd.y = number{-4};
+		this->state = number{0};
+		this->delay = number{0};
+		this->solids = false;
+		this->init_hair();
+		pico8::sfx(4);
+	}
+	void update() override
+	{
+		// jumping up
+		if (state == number{0})
+		{
+			if (y < target.y + number{16})
+			{
+				state = number{1};
+				delay = number{3};
+			}
+		}
+		// falling
+		else if (state == number{1})
+		{
+			spd.y += number{0.5};
+			if (spd.y > number{0} && delay > number{0})
+			{
+				spd.y = number{0};
+				delay -= number{1};
+			}
+			if (spd.y > number{0} && y > target.y)
+			{
+				y = target.y;
+				spd = Vect(number{0}, number{0});
+				state = number{2};
+				delay = number{5};
+				shake = number{5};
+				init_object<smoke>(x, y + number{4});
+				pico8::sfx(5);
+			}
+		}
+		// landing
+		else if (state == number{2})
+		{
+			delay -= number{1};
+			spr = number{6};
+			if (delay < number{0})
+			{
+				this->setInactive();
+				init_object<player>(x, y); // todo add current hair
+			}
+		}
+	}
+	void draw_player()
+	{
+		auto spritePush = number{0};
+		if (max_djump == number{2})
+		{
+			if (mod((frames / number{3}), number{2}).floor() == 0)
+				spritePush = number{10} * number{16};
+			else
+				spritePush = number{9} * number{16};
+		}
+		else if (max_djump == number{0})
+		{
+			spritePush = number{8} * number{16};
+		}
+		pico8::spr(this->spr + spritePush, this->x, this->y, number{1}, number{1}, this->flipX, this->flipY);
+	}
+	void draw() override
+	{
+		draw_hair(Vect(x, y), number{1}, max_djump);
 		draw_player();
 	}
 };
@@ -1231,7 +1246,7 @@ public:
 			}
 			else if (spr == number{18})
 			{
-				auto hit = static_pointer_cast<player_spawn>(collide(ObjType::Player, number{0}, number{0}));
+				auto hit = static_pointer_cast<player>(collide(ObjType::Player, number{0}, number{0}));
 				if (hit != nullptr && hit->spd.y >= number{0})
 				{
 					spr = number{19};
@@ -1353,7 +1368,7 @@ public:
 		{
 			offset += number{0.01};
 			y = start + picomath::sin(offset) * number{2};
-			auto hit = static_pointer_cast<player_spawn>(collide(ObjType::Player, number{0}, number{0}));
+			auto hit = static_pointer_cast<player>(collide(ObjType::Player, number{0}, number{0}));
 			if (hit != nullptr && hit->djump < max_djump)
 			{
 				psfx(number{6});
@@ -1408,7 +1423,7 @@ public:
 		if (this->isActive == false)
 			return;
 
-		auto hit = static_pointer_cast<player_spawn>(collide(ObjType::Player, number{0}, number{0}));
+		auto hit = static_pointer_cast<player>(collide(ObjType::Player, number{0}, number{0}));
 		if (hit != nullptr)
 		{
 			hit->djump = max_djump;
@@ -1472,7 +1487,7 @@ public:
 			spd.y = picomath::sin(step) * number{0.5};
 		}
 		// collect
-		auto hit = static_pointer_cast<player_spawn>(collide(ObjType::Player, number{0}, number{0}));
+		auto hit = static_pointer_cast<player>(collide(ObjType::Player, number{0}, number{0}));
 		if (hit != nullptr)
 		{
 			hit->djump = max_djump;
@@ -1519,7 +1534,7 @@ public:
 			return;
 
 		hitbox = Rectangle(number{-1}, number{-1}, number{18}, number{18});
-		auto hit = static_pointer_cast<player_spawn>(collide(ObjType::Player, number{0}, number{0}));
+		auto hit = static_pointer_cast<player>(collide(ObjType::Player, number{0}, number{0}));
 		if (hit != nullptr && hit->dash_effect_time > number{0})
 		{
 			hit->spd.x = -sign(hit->spd.x) * number{1.5};
@@ -1639,7 +1654,7 @@ public:
 			x = number{-16};
 		if (!check(ObjType::Player, number{0}, number{0}))
 		{
-			auto hit = static_pointer_cast<player_spawn>(collide(ObjType::Player, number{0}, number{-1}));
+			auto hit = static_pointer_cast<player>(collide(ObjType::Player, number{0}, number{-1}));
 			if (hit != nullptr)
 				hit->move_x((x - last), number{1});
 		}
@@ -1726,7 +1741,7 @@ public:
 			return;
 
 		spd.y = appr(spd.y, number{0}, number{0.5});
-		auto hit = static_pointer_cast<player_spawn>(collide(ObjType::Player, number{0}, number{0}));
+		auto hit = static_pointer_cast<player>(collide(ObjType::Player, number{0}, number{0}));
 		if (spd.y == number{0} && hit != nullptr)
 		{
 			music_timer = number{45};
@@ -1790,7 +1805,7 @@ public:
 
 		if (state == number{0})
 		{
-			auto hit = static_pointer_cast<player_spawn>(collide(ObjType::Player, number{0}, number{8}));
+			auto hit = static_pointer_cast<player>(collide(ObjType::Player, number{0}, number{8}));
 			if (hit != nullptr && hit->is_solid(number{0}, number{1}))
 			{
 				pico8::music(-1, 500, 7);
@@ -2817,10 +2832,9 @@ void draw(uint32_t tick)
 		blend(picosystem::COPY);
 		target();
 		pen(0, 0, 0, 15);
-		text("obj:" + to_string(objects.size()), -1, 0);
-		text("obj:" + to_string(objects.size()), 1, 0);
+		frect(0,0,30,10);
 		pen(15, 15, 15, 15);
-		text("obj:" + to_string(objects.size()), 0, 0);
+		text("obj:" + to_string(objectcount), 0, 0);
 		text(message2, 0, 10);
 	}
 	else

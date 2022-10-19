@@ -7,6 +7,7 @@
 * Haare kaputt
 * Player sinkt 1 Pixel ein
 * Sound lässt sich nicht immer im Menü anschalten
+* Ich brauche einen "safe array" durch Überladen des [] Operators
 
 * ~~Screen shake issues -- noch mehr Space?~~
 * ~~Replizierbarer Crash bei mehrmals hintereinander fallen, Level 3~~
