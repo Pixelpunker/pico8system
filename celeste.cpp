@@ -744,31 +744,41 @@ public:
 	}
 	~playerbase()
 	{
+		hair.clear();
 	}
-	void draw_hair(Vect pos, number facing, number djump)
+	void draw_hair(number posx, number posy, number facing, number djump)
 	{
 		auto c = (djump == number{1} ? number{8} : (djump == number{2} ? (number{7} + floor(mod((frames / number{3}), number{2})) * number{4}) : number{12}));
-		auto last = Vect(pos.x + number{4} - facing * number{2}, pos.y + (pico8::btn(k_down) ? number{4} : number{3}));
+		auto lastx = posx + number{4} - facing * number{2};
+		auto lasty = posy + (pico8::btn(k_down) ? number{4} : number{3});
 		for (auto &h : hair)
 		{
-			h.pos.x += (last.x - h.pos.x) / number{1.5};
-			h.pos.y += (last.y + number{0.5} - h.pos.y) / number{1.5};
-			pico8::circfill(h.pos.x, h.pos.y, h.size, c);
-			last = h.pos;
+			h->posx += (lastx - h->posx) / number{1.5};
+			h->posy += (lasty + number{0.5} - h->posy) / number{1.5};
+			pico8::circfill(h->posx, h->posy, h->size, c);
+			lastx = h->posx;
+			lasty = h->posy;
 		}
 	}
 	struct node
 	{
-		Vect pos;
+		number posx;
+		number posy;
 		number size;
+		node(number _posx, number _posy, number _size)
+		{
+			posx = _posx;
+			posy = _posy;
+			size = _size;
+		}
 	};
-	array<node, 5> hair;
+	vector<unique_ptr<node>> hair;
 
 	void init_hair()
 	{
 		for (auto i = 0; i <= 4; i++)
 		{
-			hair[i] = node{.pos = Vect{.x = this->x, .y = this->y}, .size = picomath::max(1, picomath::min(2, 3 - i))};
+			hair.push_back(make_unique<node>(this->x, this->y, picomath::max(1, picomath::min(2, 3 - i))));
 		}
 	}
 };
@@ -790,6 +800,10 @@ public:
 	player()
 	{
 		type = ObjType::Player;
+	}
+	~player()
+	{
+		hair.clear();
 	}
 	void init() override
 	{
@@ -1064,7 +1078,7 @@ public:
 		}
 		playerx = this->x; // save current player position for Celeste additions; ADDITION
 
-		draw_hair(Vect(this->x, this->y), flipX ? number{-1} : number{1}, djump);
+		draw_hair(this->x, this->y, flipX ? number{-1} : number{1}, djump);
 		draw_player();
 	}
 };
@@ -1083,6 +1097,7 @@ public:
 	};
 	~player_spawn()
 	{
+		hair.clear();
 	}
 	void init() override
 	{
@@ -1165,7 +1180,7 @@ public:
 	}
 	void draw() override
 	{
-		draw_hair(Vect(x, y), number{1}, max_djump);
+		draw_hair(x, y, number{1}, max_djump);
 		draw_player();
 	}
 };
@@ -2744,7 +2759,7 @@ void update(uint32_t tick)
 	}
 	catch (...)
 	{
-		hasexception=true;
+		hasexception = true;
 		std::exception_ptr p = std::current_exception();
 		target();
 		pen(0, 0, 0, 15);
@@ -2818,7 +2833,7 @@ void draw(uint32_t tick)
 	}
 	catch (...)
 	{
-		hasexception=true;
+		hasexception = true;
 		std::exception_ptr p = std::current_exception();
 		target();
 		pen(0, 0, 0, 15);
