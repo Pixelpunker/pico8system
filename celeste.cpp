@@ -145,7 +145,6 @@ static struct
 // forward declarations
 class ClassicObject;
 class player;
-class player_hair;
 class platform;
 class fall_floor_spring;
 class lifeup;
@@ -157,7 +156,6 @@ void load_room(int x, int y);
 void next_room();
 void restart_room();
 void title_screen();
-void draw_hair(player_hair &hair, Vect pos, number facing, number djump);
 void psfx(number num);
 void draw_time(number x, number y);
 void refresh_objects(bool all = 0);
@@ -248,8 +246,6 @@ struct Rectangle
 
 Point room;
 unordered_map<int, shared_ptr<ClassicObject>> objects;
-shared_ptr<ClassicObject> playerinstance = nullptr;
-shared_ptr<player_hair> hair;
 number freeze = number{0};
 number shake = number{0};
 bool will_restart = false;
@@ -493,7 +489,7 @@ public:
 
 	virtual void draw()
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 		if (spr > number{0})
 		{
@@ -503,7 +499,7 @@ public:
 
 	bool is_solid(number ox, number oy)
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return false;
 
 		if (oy > number{0} && !check(ObjType::Platform, ox, number{0}) && check(ObjType::Platform, ox, oy))
@@ -517,13 +513,13 @@ public:
 
 	bool is_ice(number ox, number oy)
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return false;
 		return ice_at(x + hitbox.x + ox, y + hitbox.y + oy, hitbox.Width, hitbox.Height);
 	}
 	shared_ptr<ClassicObject> collide(ObjType newtype, number ox, number oy)
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return nullptr;
 		// destroy_objects(); // destroy objects already marked for delete
 		// reflection is really slow so we use the type enum to check if two classic objects are of the same subtype
@@ -542,14 +538,14 @@ public:
 
 	bool check(ObjType newtype2, number ox, number oy)
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return false;
 		return collide(newtype2, ox, oy) != nullptr;
 	}
 
 	void move(number ox, number oy)
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 		number amount = number{0};
 		// [x] get move amount
@@ -567,7 +563,7 @@ public:
 
 	void move_x(number amount, number start)
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 		if (solids)
 		{
@@ -590,7 +586,7 @@ public:
 
 	void move_y(number amount)
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 		if (solids)
 		{
@@ -626,12 +622,8 @@ void init_object(number x, number y, optional<number> tile = nullopt, optional<b
 	obj->y = y;
 	auto convertedobj = static_pointer_cast<ClassicObject>(obj);
 	objects.emplace(convertedobj->id, convertedobj);
-	if (convertedobj->type == ObjType::Player_Spawn) {
-		playerinstance = convertedobj;
-	}
 	auto convertback = static_pointer_cast<T>(objects[convertedobj->id]);
 	convertback->init();
-	// return *convertback.get();
 }
 
 void markparticlesfordelete(int id)
@@ -644,7 +636,6 @@ void refresh_objects(bool all)
 	if (all == true)
 	{
 		objects.clear();
-		hair.reset();
 		markedfordelete.clear();
 		return;
 	}
@@ -699,7 +690,7 @@ public:
 	}
 	void update() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 		spr += number{0.2};
 		if (spr >= number{32})
@@ -729,7 +720,7 @@ public:
 
 	void update() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 		duration -= number{1};
 		if (duration <= number{0})
@@ -738,60 +729,22 @@ public:
 
 	void draw() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 		flash += number{0.5};
 		pico8::print("1000", x - number{2}, y, mod(number{7} + flash, number{2}));
 	}
 };
 
-class player_hair
+class playerbase : public ClassicObject
 {
 public:
-	struct node
+	playerbase()
 	{
-	public:
-		Vect pos;
-		number size;
-		node() = default;
-		node(Vect pos_, number size_)
-		{
-			pos = pos_;
-			size = size_;
-		}
-	};
-
-	node hair[5];
-
-	player_hair(Vect pos)
-	{
-		for (auto i = 0; i <= 4; i += 1)
-			hair[i] = node(pos, picomath::max(number{1}, picomath::min(number{2}, number{3} - i)));
-	};
-};
-
-// moved outside class player_hair because of circular definitions
-void draw_hair(player_hair &hair, Vect pos, number facing, number djump)
-{
-	return;
-	auto c = (djump == number{1} ? number{8} : (djump == number{2} ? (number{7} + floor(mod((frames / number{3}), number{2})) * number{4}) : number{12}));
-	auto last = Vect(pos.x + number{4} - facing * number{2}, pos.y + (pico8::btn(k_down) ? number{4} : number{3}));
-	for (auto &h : hair.hair)
-	{
-		h.pos.x += (last.x - h.pos.x) / number{1.5};
-		h.pos.y += (last.y + number{0.5} - h.pos.y) / number{1.5};
-		pico8::circfill(h.pos.x, h.pos.y, h.size, c);
-		last = h.pos;
 	}
-}
-
-class playerbase : public ClassicObject {
-	public:
-		playerbase() {
-
-		}
-		~playerbase() {
-		}
+	~playerbase()
+	{
+	}
 	void draw_hair(Vect pos, number facing, number djump)
 	{
 		auto c = (djump == number{1} ? number{8} : (djump == number{2} ? (number{7} + floor(mod((frames / number{3}), number{2})) * number{4}) : number{12}));
@@ -811,9 +764,11 @@ class playerbase : public ClassicObject {
 	};
 	array<node, 5> hair;
 
-	void init_hair() {
-		for (auto i = 0; i <= 4; i++) {
-			hair[i] = node{.pos = Vect{ .x = this->x, .y = this->y }, .size = picomath::max(1, picomath::min(2, 3 - i))};
+	void init_hair()
+	{
+		for (auto i = 0; i <= 4; i++)
+		{
+			hair[i] = node{.pos = Vect{.x = this->x, .y = this->y}, .size = picomath::max(1, picomath::min(2, 3 - i))};
 		}
 	}
 };
@@ -841,6 +796,7 @@ public:
 		spr = number{1};
 		djump = max_djump;
 		hitbox = Rectangle(number{1}, number{3}, number{6}, number{5});
+		init_hair();
 	}
 
 	void kill_player()
@@ -868,6 +824,10 @@ public:
 
 	void update() override
 	{
+		if (!this->isActive)
+		{
+			return;
+		}
 		if (pause_player)
 			return;
 		auto input = pico8::btn(k_right) ? number{1} : (pico8::btn(k_left) ? number{-1} : number{0});
@@ -1076,6 +1036,10 @@ public:
 	}
 	void draw_player()
 	{
+		if (!this->isActive)
+		{
+			return;
+		}
 		auto spritePush = number{0};
 		if (this->djump == number{2})
 		{
@@ -1134,6 +1098,10 @@ public:
 	}
 	void update() override
 	{
+		if (!this->isActive)
+		{
+			return;
+		}
 		// jumping up
 		if (state == number{0})
 		{
@@ -1177,6 +1145,10 @@ public:
 	}
 	void draw_player()
 	{
+		if (!this->isActive)
+		{
+			return;
+		}
 		auto spritePush = number{0};
 		if (max_djump == number{2})
 		{
@@ -1216,7 +1188,7 @@ public:
 	}
 	void break_fall_floor()
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 		if (this->state == number{0})
 		{
@@ -1231,7 +1203,7 @@ public:
 	}
 	void update() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 		if (type == ObjType::Spring)
 		{
@@ -1315,7 +1287,7 @@ public:
 	}
 	void draw() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 
 		if (type == ObjType::Fall_Floor)
@@ -1362,7 +1334,7 @@ public:
 	}
 	void update() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 		if (spr == number{22})
 		{
@@ -1389,7 +1361,7 @@ public:
 	}
 	void draw() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 		if (spr == number{22})
 		{
@@ -1420,7 +1392,7 @@ public:
 
 	void update() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 
 		auto hit = static_pointer_cast<player>(collide(ObjType::Player, number{0}, number{0}));
@@ -1459,7 +1431,7 @@ public:
 
 	void update() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 
 		// fly away
@@ -1501,7 +1473,7 @@ public:
 	}
 	void draw() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 
 		number off = number{0.0};
@@ -1530,7 +1502,7 @@ public:
 	}
 	void update() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 
 		hitbox = Rectangle(number{-1}, number{-1}, number{18}, number{18});
@@ -1553,7 +1525,7 @@ public:
 	}
 	void draw() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 
 		pico8::spr(number{64}, x, y);
@@ -1572,7 +1544,7 @@ public:
 	}
 	void update() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 
 		auto was = floor(spr);
@@ -1608,7 +1580,7 @@ public:
 	}
 	void update() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 
 		if (has_key)
@@ -1645,7 +1617,7 @@ public:
 	}
 	void update() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 		spd.x = dir * number{0.65};
 		if (x < number{-16})
@@ -1662,7 +1634,7 @@ public:
 	}
 	void draw() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 
 		pico8::spr(number{11}, x, y - number{1});
@@ -1682,7 +1654,7 @@ public:
 	}
 	void draw() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 
 		// todo check why text in level is unreadable
@@ -1737,7 +1709,7 @@ public:
 	}
 	void draw() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 
 		spd.y = appr(spd.y, number{0}, number{0.5});
@@ -1800,7 +1772,7 @@ public:
 	}
 	void draw() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 
 		if (state == number{0})
@@ -1884,7 +1856,7 @@ public:
 	}
 	void draw() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 
 		spr = number{118} + mod((frames / number{5.0}), number{3});
@@ -1917,7 +1889,7 @@ public:
 	}
 	void draw() override
 	{
-		if (this->isActive == false)
+		if (!this->isActive)
 			return;
 
 		delay -= number{1};
@@ -1947,7 +1919,6 @@ public:
 
 void restart_room()
 {
-	refresh_objects(true); // debug
 	will_restart = true;
 	delay_restart = number{15};
 }
@@ -1997,15 +1968,7 @@ void load_room(int x, int y)
 				init_object<platform>(tx * number{8}, ty * number{8}, nullopt, nullopt, number{1});
 				break;
 			case 1:
-				if (playerinstance == nullptr) {
-					init_object<player_spawn>(tx * number{8}, ty * number{8}, tile);
-				} else {
-					playerinstance->x = tx * number{8};
-					playerinstance->y = ty * number{8};
-					playerinstance->spr = tile;
-					playerinstance->isActive = true;
-					objects.emplace(playerinstance->id, playerinstance);
-				}
+				init_object<player_spawn>(tx * number{8}, ty * number{8}, tile);
 				break;
 			case 18:
 				init_object<fall_floor_spring>(tx * number{8}, ty * number{8}, tile, true); // spring (spring_fall_floor combo)
@@ -2744,123 +2707,126 @@ void init()
 
 void update(uint32_t tick)
 {
-	if (hasexception == true)
+	try
 	{
-		return;
-	}
-	// try
-	// {
-	if (currentgamestate == game)
-	{
-		try
+		if (hasexception == true)
 		{
-			ClassicUpdate();
-		}
-		catch (...)
-		{
-			hasexception = true;
-			std::exception_ptr p = std::current_exception();
-			target();
-			pen(0, 0, 0, 15);
-			picosystem::frect(0, 39, 128, 21);
-			pen(0, 15, 0, 15);
-			text((p ? p.__cxa_exception_type()->name() : "null"), 0, 40);
-			text("update", 0, 50);
-			_flip();
 			return;
 		}
-		auto direction = movetarget.findDirection(playerx);
-		if (direction == direction::left)
-		{
-			movetarget.target1 = 0;
-		}
-		auto target = movetarget.findTarget(playerx);
-		cam.x = target;
-		cam.update();
-	}
-	else
-	{
-		menu_update();
-	}
-
-	if (pressed(Y) && !is_title())
-	{
 		if (currentgamestate == game)
 		{
-			switch_to_menu();
+			ClassicUpdate();
+			auto direction = movetarget.findDirection(playerx);
+			if (direction == direction::left)
+			{
+				movetarget.target1 = 0;
+			}
+			auto target = movetarget.findTarget(playerx);
+			cam.x = target;
+			cam.update();
 		}
 		else
 		{
-			return_to_game();
+			menu_update();
+		}
+
+		if (pressed(Y) && !is_title())
+		{
+			if (currentgamestate == game)
+			{
+				switch_to_menu();
+			}
+			else
+			{
+				return_to_game();
+			}
 		}
 	}
-	// }
-	// catch (const std::exception &e)
-	// {
-	// 	errormessage = e.what();
-	// 	error = true;
-	// 	target();
-	// 	pen(0, 15, 0, 15);
-	// 	text(errormessage, 0, 40);
-	// 	text("update", 0, 50);
-	// 	_flip();
-	// }
+	catch (...)
+	{
+		hasexception=true;
+		std::exception_ptr p = std::current_exception();
+		target();
+		pen(0, 0, 0, 15);
+		picosystem::frect(0, 39, 128, 21);
+		pen(0, 15, 0, 15);
+		text((p ? p.__cxa_exception_type()->name() : "null"), 0, 40);
+		text("update", 0, 50);
+		_flip();
+		return;
+	}
 }
 
 void draw(uint32_t tick)
 {
-	if (hasexception == true)
+	try
 	{
-		return;
-	}
-	if (currentgamestate == game)
-	{
-		blend(pico8::PALETTE);
-		target(pico8::PICO8SCREEN);
-		clip(0, 0, 128, 128);
-		ClassicDraw();
-		target();
-		blend(pico8::CONVERT);
-		viewportx = secondaryCamera();
-		viewporty = leveloffsets[level_index().floor()][1];
+		if (hasexception == true)
+		{
+			return;
+		}
+		if (currentgamestate == game)
+		{
+			blend(pico8::PALETTE);
+			target(pico8::PICO8SCREEN);
+			clip(0, 0, 128, 128);
+			ClassicDraw();
+			target();
+			blend(pico8::CONVERT);
+			viewportx = secondaryCamera();
+			viewporty = leveloffsets[level_index().floor()][1];
 
-		// blit(pico8::PICO8SCREEN, 4, 4, 120, 120, -10, -10, 120, 120);
-		// blit(pico8::PICO8SCREEN, 4, 4, 120, 120, 10, 10, 110, 110);
-		auto widthx = screenshakex.round() > 0 ? 120 - screenshakex.round() : 120;
-		auto widthy = screenshakey.round() > 0 ? 120 - screenshakey.round() : 120;
-		blit(pico8::PICO8SCREEN, viewportx, viewporty, 120 - screenshakex.round(), 120 - screenshakey.round(), screenshakex.round(), screenshakey.round(), widthx, widthy);
-		blend(picosystem::COPY);
+			// blit(pico8::PICO8SCREEN, 4, 4, 120, 120, -10, -10, 120, 120);
+			// blit(pico8::PICO8SCREEN, 4, 4, 120, 120, 10, 10, 110, 110);
+			auto widthx = screenshakex.round() > 0 ? 120 - screenshakex.round() : 120;
+			auto widthy = screenshakey.round() > 0 ? 120 - screenshakey.round() : 120;
+			blit(pico8::PICO8SCREEN, viewportx, viewporty, 120 - screenshakex.round(), 120 - screenshakey.round(), screenshakex.round(), screenshakey.round(), widthx, widthy);
+			blend(picosystem::COPY);
+			target();
+			pen(0, 0, 0, 15);
+			frect(0, 0, 30, 10);
+			pen(15, 15, 15, 15);
+			text("obj:" + to_string(objectcount), 0, 0);
+			text(message2, 0, 10);
+		}
+		else
+		{
+			menu_draw(tick);
+		}
+
+		// Start Debug stats
+		//
+
+		// Debug saving
+		/* 	text(to_string(pico8::flash_target_contents[0]), 60, 86);			 // DEBUG
+			text(to_string(pico8::sound), 40, 96);								 // DEBUG
+			text(to_string(pico8::berries), 40, 106);							 // DEBUG
+			text("snd: " + to_string(pico8::flash_target_contents[1]), 60, 96);	 // DEBUG
+			text("ber: " + to_string(pico8::flash_target_contents[2]), 60, 106); // DEBUG */
+
+		// Debug FPS
+		/* 	blend(picosystem::COPY); // DEBUG
+			auto drawstat = stats.draw_us/100; // DEBUG
+			auto updatestat = stats.update_us/100; // DEBUG
+			auto combined = drawstat + updatestat; // DEBUG
+		pen(15, 0, 0); // DEBUG
+
+		text("fps: " + str(stats.fps), 60, 86); // DEBUG
+		text("draw: " + str(drawstat), 60, 94); // DEBUG
+		text("update: " + str(updatestat), 60, 102); // DEBUG
+		text("combined: " + str(combined), 60, 110); // DEBUG */
+	}
+	catch (...)
+	{
+		hasexception=true;
+		std::exception_ptr p = std::current_exception();
 		target();
 		pen(0, 0, 0, 15);
-		frect(0,0,30,10);
-		pen(15, 15, 15, 15);
-		text("obj:" + to_string(objectcount), 0, 0);
-		text(message2, 0, 10);
+		picosystem::frect(0, 39, 128, 21);
+		pen(0, 15, 0, 15);
+		text((p ? p.__cxa_exception_type()->name() : "null"), 0, 40);
+		text("draw", 0, 50);
+		_flip();
+		return;
 	}
-	else
-	{
-		menu_draw(tick);
-	}
-
-	// Start Debug stats
-	//
-
-	// Debug saving
-	/* 	text(to_string(pico8::flash_target_contents[0]), 60, 86);			 // DEBUG
-		text(to_string(pico8::sound), 40, 96);								 // DEBUG
-		text(to_string(pico8::berries), 40, 106);							 // DEBUG
-		text("snd: " + to_string(pico8::flash_target_contents[1]), 60, 96);	 // DEBUG
-		text("ber: " + to_string(pico8::flash_target_contents[2]), 60, 106); // DEBUG */
-
-	// Debug FPS
-	/* 	blend(picosystem::COPY); // DEBUG
-		auto drawstat = stats.draw_us/100; // DEBUG
-		auto updatestat = stats.update_us/100; // DEBUG
-		auto combined = drawstat + updatestat; // DEBUG
-	pen(15, 0, 0); // DEBUG
-
-	text("fps: " + str(stats.fps), 60, 86); // DEBUG
-	text("draw: " + str(drawstat), 60, 94); // DEBUG
-	text("update: " + str(updatestat), 60, 102); // DEBUG
-	text("combined: " + str(combined), 60, 110); // DEBUG */
 }

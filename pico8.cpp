@@ -219,7 +219,7 @@ namespace pico8
   auto mountain = buffer(95, 48, mountaindata);
   auto celeste = buffer(128, 64, spritedata);
 
-  const int picowidth = 128; // workaround for
+  const int picowidth = 136; // workaround for
                              // screen shake issue, should be 128, was 136
   color_t _fdp[picowidth * picowidth] __attribute__((aligned(4))) = {};
   static buffer_t *PICO8SCREEN = buffer(picowidth, picowidth, _fdp);
@@ -385,8 +385,8 @@ namespace pico8
   void spr(number spriteindex_, number x_, number y_, number cols_, number rows_, bool flipx_, bool flipy_)
   {
     auto spriteindex = spriteindex_.floor();
-    auto x = x_.round();
-    auto y = y_.round();
+    auto x = x_.floor(); // was round
+    auto y = y_.floor(); // was round
     auto cols = cols_.floor();
     auto rows = rows_.floor();
     auto flipx = flipx_;
