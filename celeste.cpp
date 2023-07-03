@@ -2140,8 +2140,8 @@ void Celeste_P8_draw()
 	if (is_title())
 	{
 		pico8::center("A+B", 80, 5);
-		pico8::center("Maddy Thorson", 96, 5);
-		pico8::center("Noel Berry", 102 + 2, 5);
+		pico8::center("  Maddy Thorson", 96, 5);
+		pico8::center("  Noel Berry", 102 + 2, 5);
 	}
 
 	if (level_index() == 30)
