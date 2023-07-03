@@ -267,13 +267,15 @@ static void PRELUDE()
 
 void Celeste_P8_init()
 { // identifiers beginning with underscores are reserved in C
-	if (!Celeste_P8_call)
-	{
-		fprintf(stderr, "Warning: Celeste_P8_call is NULL.. have you called Celeste_P8_set_call_func()?\n");
-	}
-
+	flash_bg = false;
+	new_bg = false;
+	frames, seconds = 0,0;
+	minutes = 0; // this variable can overflow in normal gameplay (after +500 hours)
+	deaths, max_djump = 0, 0;
+	start_game = false;
+	start_game_flash = false;
+	pico8::pal();
 	PRELUDE();
-
 	title_screen();
 }
 
@@ -2022,7 +2024,7 @@ void Celeste_P8_draw()
 		if (c < 10)
 		{
 			pico8::pal(6, c, 1),
-				pico8::pal(12, c, 1);
+			pico8::pal(12, c, 1);
 			pico8::pal(13, c, 1);
 			pico8::pal(5, c, 1);
 			pico8::pal(1, c, 1);
@@ -2667,7 +2669,6 @@ static void menu_draw(uint32_t tick)
 
 void init()
 {
-	pico8::pal();
 	pico8::init(true);
 	restoresettings();
 	currentgamestate = game;
@@ -2718,7 +2719,7 @@ void draw(uint32_t tick)
 	{
 		blend(pico8::PALETTE);
 		target(pico8::PICO8SCREEN);
-			Celeste_P8_draw();
+		Celeste_P8_draw();
 		target();
 		blend(pico8::CONVERT);
 		viewportx = secondaryCamera();
