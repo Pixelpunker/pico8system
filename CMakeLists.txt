@@ -23,7 +23,7 @@ include(pico_sdk_import.cmake)
 project(${PROJECT_NAME} C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
-
+set(PICO_CXX_ENABLE_EXCEPTIONS 1) # we can disable exceptions in release, only for debugging
 
 # Initialize the SDK
 pico_sdk_init()

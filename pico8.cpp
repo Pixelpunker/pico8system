@@ -572,7 +572,7 @@ namespace pico8
 
   void fset(number n, number f, bool val)
   {
-    fset(n, f, val);
+    fset((int)n, (int)f, val);
   }
 
   void map(uint32_t cell_x = 0, uint32_t cell_y = 0, int32_t sx = 0, int32_t sy = 0, uint32_t cell_w = 128, uint32_t cell_h = 32, uint32_t layers = 0)
@@ -669,7 +669,7 @@ namespace pico8
 
   void line(number x0, number y0, optional<number> x1, optional<number> y1, optional<number> c)
   {
-    line((int)x0, (int)y0, (optional<number>)x1, (optional<number>)y1, (optional<number>)c);
+    line((int)x0, (int)y0, (optional<int>)x1, (optional<int>)y1, (optional<int>)c);
   }
 
   static void circ(int32_t x, int32_t y, uint32_t r, optional<uint32_t> c)
@@ -911,8 +911,12 @@ namespace pico8
 
   static void launchsfx()
   {
+    while (true)
+    {
     uint32_t n = multicore_fifo_pop_blocking();
     internalsfx(n);
+      sleep_ms(30); // sleep until just before the next frame ...
+    }
   }
 
   // int sfxqueue;
@@ -920,8 +924,6 @@ namespace pico8
   {
     if (sound == true)
     {
-      multicore_reset_core1();
-      multicore_launch_core1(launchsfx);
       multicore_fifo_push_blocking(n);
     }
   }
@@ -992,12 +994,14 @@ namespace pico8
   void init(bool swapped_buttons = false)
   {
     restoreSettingsFromFlash();
+    // multicore_reset_core1();
+    multicore_launch_core1(launchsfx);
     font(-1, -1, -1, _minimal_font);
     swapped_buttons = swapped_buttons;
-    // set drawing region to 128x128 (visible only 120x120 controlled by system_offset and hud_offset)
-    clip(0, 0, 128, 128);
 
     target(PICO8SCREEN);
+    // set drawing region to 128x128 (visible only 120x120 controlled by system_offset and hud_offset)
+    clip(0, 0, 128, 128);
 
     blend(PALETTE);
     spritesheet(celeste);

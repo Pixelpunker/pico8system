@@ -2535,15 +2535,24 @@ static void menu_update()
 			selectedmenuindex--;
 		}
 	}
-	else if (pressed(DOWN))
+		else if (pressed(DOWN))
 	{
-		if (selectedmenuindex < menu1->size() - 1)
+		if (menupage == 0)
 		{
-			selectedmenuindex++;
+			if (selectedmenuindex < menu1->size() - 1)
+			{
+				selectedmenuindex++;
+			}
 		}
-	}
-	else if (pressed(LEFT))
-	{
+		else if (menupage == 1)
+		{
+			if (selectedmenuindex < menu2->size() - 1)
+			{
+				selectedmenuindex++;
+			}
+		}
+	}	
+	else if (pressed(LEFT))	{
 		menu2->at(selectedmenuindex).selected = menu2->at(selectedmenuindex).settings->front();
 	}
 	else if (pressed(RIGHT))
@@ -2687,6 +2696,12 @@ void update(uint32_t tick)
 			return_to_game();
 		}
 	}
+	if (pressed(X) && !is_title()) {
+		if (currentgamestate == game)
+		{
+			next_room();
+		}
+	}
 }
 
 void draw(uint32_t tick)
@@ -2695,7 +2710,7 @@ void draw(uint32_t tick)
 	{
 		blend(pico8::PALETTE);
 		target(pico8::PICO8SCREEN);
-		Celeste_P8_draw();
+			Celeste_P8_draw();
 		target();
 		blend(pico8::CONVERT);
 		viewportx = secondaryCamera();
