@@ -2705,12 +2705,15 @@ void update(uint32_t tick)
 			return_to_game();
 		}
 	}
-	if (pressed(X) && !is_title()) {
+	// for debugging only
+	// DEBUG
+/* 	if (pressed(X) && !is_title()) {
 		if (currentgamestate == game)
 		{
 			next_room();
 		}
-	}
+	} */
+	// end debug
 }
 
 void draw(uint32_t tick)
