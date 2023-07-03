@@ -994,7 +994,7 @@ namespace pico8
   void init(bool swapped_buttons = false)
   {
     restoreSettingsFromFlash();
-    // multicore_reset_core1();
+    multicore_reset_core1();
     multicore_launch_core1(launchsfx);
     font(-1, -1, -1, _minimal_font);
     swapped_buttons = swapped_buttons;

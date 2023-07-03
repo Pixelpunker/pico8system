@@ -350,7 +350,7 @@ static void PRELUDE_initparticles()
 		particles.push_back((PARTICLE){
 			.x = rnd(128),
 			.y = rnd(128),
-			.s = 2 + P8flr(rnd(5) / 4),
+			.s = 1 + P8flr(rnd(5) / 4),
 			.spd = 0.25f + rnd(5),
 			.off = rnd(1),
 			.c = 6 + P8flr(0.5 + rnd(1))});
@@ -1463,7 +1463,7 @@ static void PLATFORM_draw(OBJ *this)
 // last=0,
 static void MESSAGE_draw(OBJ *this)
 {
-	this->text = "-- celeste mountain --#this memorial to those# perished on the climb";
+	this->text = "-- celeste mountain --#this memorial to those#perished on the climb";
 	if (OBJ_check(this, OBJ_PLAYER, 4, 0))
 	{
 		if (this->index < strlen(this->text))
@@ -1475,21 +1475,28 @@ static void MESSAGE_draw(OBJ *this)
 				pico8::sfx(35);
 			}
 		}
-		this->off2.x = 8;
 		this->off2.y = 96;
+		auto line1 = 12;
+		auto line2 = 10;
+		auto line3 = 14;
+		this->off2.x = line1;
 		for (int i = 0; i < this->index; i++)
 		{
 			if (this->text[i] != '#')
 			{
-				pico8::rectfill(this->off2.x - 2, this->off2.y - 2, this->off2.x + 7, this->off2.y + 6, 7);
 				char charstr[2];
 				charstr[0] = this->text[i], charstr[1] = '\0';
+				auto characterwidth = pico8::gettextwidth(charstr)-1;
+				pico8::rectfill(this->off2.x-1, this->off2.y - 2, this->off2.x + characterwidth, this->off2.y + 6, 7);
 				pico8::print(charstr, this->off2.x, this->off2.y, 0);
-				this->off2.x += 5;
+				this->off2.x += characterwidth;
 			}
 			else
 			{
-				this->off2.x = 8;
+				this->off2.x = line2;
+				if (i > 40) {
+									this->off2.x = line3;
+				}
 				this->off2.y += 7;
 			}
 		}
