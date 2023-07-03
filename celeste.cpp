@@ -1626,17 +1626,17 @@ static void FLAG_draw(OBJ *this)
 	if (this->show)
 	{
 		pico8::rectfill(32, 2, 96, 31, 0);
-		pico8::spr(26, 55, 6, 1, 1, false, false);
+		pico8::spr(26, 55, 6+3, 1, 1, false, false);
 		{
 			char str[16];
 			snprintf(str, sizeof(str), "x%i", this->score);
-			pico8::print(str, 64, 9, 7);
+			pico8::print(str, 64, 9+2, 7);
 		}
-		draw_time(49, 16);
+		draw_time(49, 16-4);
 		{
 			char str[16];
 			snprintf(str, sizeof(str), "deaths:%i", deaths);
-			pico8::print(str, 48, 24, 7);
+			pico8::print(str, 48, 24-1, 7);
 		}
 	}
 	else if (OBJ_check(this, OBJ_PLAYER, 0, 0))
@@ -2667,6 +2667,7 @@ static void menu_draw(uint32_t tick)
 
 void init()
 {
+	pico8::pal();
 	pico8::init(true);
 	restoresettings();
 	currentgamestate = game;
