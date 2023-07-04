@@ -1022,4 +1022,16 @@ namespace pico8
     spritesheet(celeste);
     pal();
   }
+
+  void secondinit(bool swapped_buttons = false) {
+    swapped_buttons = swapped_buttons;
+
+    target(PICO8SCREEN);
+    // set drawing region to 128x128 (visible only 120x120 controlled by system_offset and hud_offset)
+    clip(0, 0, 128, 128);
+
+    blend(PALETTE);
+    spritesheet(celeste);
+    pal();
+  }
 }

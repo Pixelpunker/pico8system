@@ -347,6 +347,7 @@ vector<PARTICLE> dead_particles;
 // top level init code has been moved into a function
 static void PRELUDE_initparticles()
 {
+	particles.clear();
 	for (auto i = 0; i <= 24; i++)
 	{
 		particles.push_back((PARTICLE){
@@ -2443,6 +2444,13 @@ static void switch_to_menu()
 	spritesheet(pico8::mountain);
 }
 
+static void secondinit()
+{
+	pico8::secondinit(true);
+	currentgamestate = game;
+	Celeste_P8_init();
+}
+
 static auto menu1 = new vector<menuentry>{
 	{.text = "resume",
 	 .selected = none,
@@ -2452,7 +2460,7 @@ static auto menu1 = new vector<menuentry>{
 	{.text = "return to title",
 	 .selected = none,
 	 .settings = new vector<setting>{none},
-	 .a_button_action = init},
+	 .a_button_action = secondinit},
 
 	{.text = "options",
 	 .selected = none,
@@ -2489,12 +2497,12 @@ static void restoresettings()
 	if (pico8::sound == true)
 	{
 		menu2->at(1).selected = on;
-		pico8::sfx(1000);
+		// pico8::sfx(1000);
 	}
 	if (pico8::sound == false)
 	{
 		menu2->at(1).selected = off;
-		pico8::sfx(1001);
+		// pico8::sfx(1001);
 	}
 	if (pico8::berries == 0)
 	{
