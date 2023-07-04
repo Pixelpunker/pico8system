@@ -2489,10 +2489,12 @@ static void restoresettings()
 	if (pico8::sound == true)
 	{
 		menu2->at(1).selected = on;
+		pico8::sfx(1000);
 	}
 	if (pico8::sound == false)
 	{
 		menu2->at(1).selected = off;
+		pico8::sfx(1001);
 	}
 	if (pico8::berries == 0)
 	{
@@ -2520,11 +2522,11 @@ static void menu_update()
 
 	if (menu2->at(1).selected == on)
 	{
-		pico8::sound = true;
+		pico8::sfx(1000);
 	}
 	if (menu2->at(1).selected == off)
 	{
-		pico8::sound = false;
+		pico8::sfx(1001);
 	}
 	if (menu2->at(2).selected == strawberry)
 	{

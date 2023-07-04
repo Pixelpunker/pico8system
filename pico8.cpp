@@ -895,6 +895,21 @@ namespace pico8
 
   static void internalsfx(uint32_t n, uint32_t channel = 0, uint32_t offset = 0, uint32_t length = 255)
   {
+    if (n == 1000) { // sound on
+      sound = true;
+      return;
+    }
+    if (n == 1001) { // sound off
+      sound = false;
+      // play empty note to silence audio
+      play(voice(0, 0, 100, 0, 0, 0, 0, 0, 0), 0, 100, 100);
+      return;   
+    }
+
+    if (!sound) {
+      return;
+    }
+
     auto pattern = patterns.at(n);
     for (auto note : pattern.notes)
     {
@@ -922,10 +937,7 @@ namespace pico8
   // int sfxqueue;
   static void sfx(uint32_t n, uint32_t channel = 0, uint32_t offset = 0, uint32_t length = 255)
   {
-    if (sound == true)
-    {
       multicore_fifo_push_blocking(n);
-    }
   }
 
   // music will not be implemented because it would sound like crap anyway
@@ -941,7 +953,8 @@ namespace pico8
 
   void restoreSettingsFromFlash()
   {
-    if ((uint8_t)flash_target_contents[0] == magicvalue)
+    // temporarily disabled settings restore because of issues
+    if (false && (uint8_t)flash_target_contents[0] == magicvalue)
     { // we have written before and can restore settings
       if ((uint8_t)flash_target_contents[1] == 0)
       {
@@ -981,6 +994,7 @@ namespace pico8
 
   void writeSettingsToFlash()
   {
+    return; // temporarily disabled settings save because of issues
     save_data[0] = magicvalue;
     save_data[1] = (uint8_t)sound;
     save_data[2] = (uint8_t)berries;
@@ -989,6 +1003,7 @@ namespace pico8
     flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE * 1);
     flash_range_program(FLASH_TARGET_OFFSET, save_data, FLASH_PAGE_SIZE * 1);
     restore_interrupts(ints);
+    multicore_launch_core1(launchsfx);
   }
 
   void init(bool swapped_buttons = false)
