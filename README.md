@@ -2,7 +2,7 @@
 
 PicoSystem and PICO-8 are strange siblings in name and spirit. They are based on vastly different technologies, one real, one just made up. This compatibility layer tries to bridge the gap.
 
-# Just wanna play?
+## Just wanna play?
 The full game is on https://pixelpunker.itch.io/celeste-picosystem
 
 ## Credits
